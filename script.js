@@ -159,6 +159,33 @@ document.addEventListener('DOMContentLoaded', () => {
     initFirebase();
 
     /* ==========================================================================
+       MOBILE HAMBURGER NAVIGATION
+       ========================================================================== */
+    const navHamburger = document.getElementById('nav-hamburger');
+    const siteNav      = document.getElementById('site-nav');
+
+    if (navHamburger && siteNav) {
+        // Toggle open/close
+        navHamburger.addEventListener('click', () => {
+            const isOpen = siteNav.classList.toggle('nav-open');
+            navHamburger.classList.toggle('open', isOpen);
+            navHamburger.setAttribute('aria-expanded', String(isOpen));
+            // Prevent body scroll when nav is open
+            document.body.style.overflow = isOpen ? 'hidden' : '';
+        });
+
+        // Close nav when a link is clicked
+        siteNav.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                siteNav.classList.remove('nav-open');
+                navHamburger.classList.remove('open');
+                navHamburger.setAttribute('aria-expanded', 'false');
+                document.body.style.overflow = '';
+            });
+        });
+    }
+
+    /* ==========================================================================
        CUSTOM CURSOR SETUP
        ========================================================================== */
     const cursorDot = document.getElementById('custom-cursor');
