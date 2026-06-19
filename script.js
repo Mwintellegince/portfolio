@@ -159,6 +159,121 @@ document.addEventListener('DOMContentLoaded', () => {
     initFirebase();
 
     /* ==========================================================================
+       CUSTOM NOTIFICATION MODAL  (replaces browser alert())
+       ========================================================================== */
+    const notifOverlay = document.getElementById('notif-overlay');
+    const notifIconWrap = document.getElementById('notif-icon-wrap');
+    const notifTitle   = document.getElementById('notif-title');
+    const notifMsg     = document.getElementById('notif-msg');
+    const notifOkBtn   = document.getElementById('notif-ok-btn');
+
+    // SVG icons
+    const ICONS = {
+        error: `<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>`,
+        success: `<svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>`,
+        warn: `<svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+               </svg>`
+    };
+
+    // Play error/success sound via Web Audio API
+    function playNotifSound(type) {
+        try {
+            const actx = new (window.AudioContext || window.webkitAudioContext)();
+            if (type === 'success') {
+                // Ascending two-tone chime
+                [[523, 0], [659, 0.12]].forEach(([freq, delay]) => {
+                    const osc = actx.createOscillator();
+                    const gain = actx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, actx.currentTime + delay);
+                    gain.gain.setValueAtTime(0.18, actx.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + delay + 0.35);
+                    osc.connect(gain);
+                    gain.connect(actx.destination);
+                    osc.start(actx.currentTime + delay);
+                    osc.stop(actx.currentTime + delay + 0.35);
+                });
+            } else {
+                // Short descending error buzz
+                [[320, 0, 'sawtooth'], [200, 0.14, 'sawtooth']].forEach(([freq, delay, wave]) => {
+                    const osc = actx.createOscillator();
+                    const gain = actx.createGain();
+                    osc.type = wave;
+                    osc.frequency.setValueAtTime(freq, actx.currentTime + delay);
+                    gain.gain.setValueAtTime(0.12, actx.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + delay + 0.22);
+                    osc.connect(gain);
+                    gain.connect(actx.destination);
+                    osc.start(actx.currentTime + delay);
+                    osc.stop(actx.currentTime + delay + 0.22);
+                });
+            }
+        } catch (e) { /* silently ignore if audio is blocked */ }
+    }
+
+    /**
+     * showNotification(message, type)
+     * type: 'error' | 'success' | 'warn'  (defaults to 'error')
+     */
+    function showNotification(message, type = 'error') {
+        if (!notifOverlay) { alert(message); return; }
+
+        // Reset
+        notifIconWrap.className = 'notif-icon-wrap';
+        notifOkBtn.className    = 'notif-ok-btn';
+        notifTitle.className    = 'notif-title';
+
+        // Set content based on type
+        const labels = { error: 'Error', success: 'Success', warn: 'Warning' };
+        notifTitle.textContent  = labels[type] || 'Notice';
+        notifMsg.textContent    = message;
+        notifIconWrap.innerHTML = ICONS[type] || ICONS.error;
+        notifIconWrap.classList.add(type);
+        notifTitle.classList.add(type);
+        if (type === 'error' || type === 'warn') notifOkBtn.classList.add('error-btn');
+        if (type === 'success') notifOkBtn.classList.add('success-btn');
+
+        // Show modal
+        notifOverlay.classList.add('active');
+        playNotifSound(type);
+
+        // Re-trigger icon animation by removing/re-adding the class
+        void notifIconWrap.offsetWidth;
+        notifOkBtn.focus();
+    }
+
+    // Close on OK button
+    if (notifOkBtn) {
+        notifOkBtn.addEventListener('click', () => {
+            notifOverlay.classList.remove('active');
+        });
+    }
+
+    // Close on backdrop click
+    if (notifOverlay) {
+        notifOverlay.addEventListener('click', (e) => {
+            if (e.target === notifOverlay) notifOverlay.classList.remove('active');
+        });
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && notifOverlay && notifOverlay.classList.contains('active')) {
+            notifOverlay.classList.remove('active');
+        }
+    });
+
+    /* ==========================================================================
        MOBILE HAMBURGER NAVIGATION
        ========================================================================== */
     const navHamburger = document.getElementById('nav-hamburger');
@@ -1221,7 +1336,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const clientBrief = document.getElementById('client-brief').value.trim();
 
                 if (!clientName || !clientEmail || !clientBrief) {
-                    alert('Please fill out your Name, Email, and Project Brief before starting the payment.');
+                    showNotification('Please fill out your Name, Email, and Project Brief before starting the payment.', 'warn');
                     throw new Error('Form validation failed');
                 }
 
@@ -1264,12 +1379,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (checkoutModal) checkoutModal.classList.remove('active');
                     if (checkoutForm) checkoutForm.reset();
 
-                    alert('Payment successful! Your order has been registered and is under review.');
+                    showNotification('Payment successful! Your order has been registered and is under review.', 'success');
                 });
             },
             onError: function(err) {
                 console.error('PayPal Smart Buttons Checkout Error:', err);
-                alert('A PayPal checkout error occurred. Please try InstaPay, Vodafone Cash, or contact us.');
+                showNotification('A PayPal checkout error occurred. Please try InstaPay, Vodafone Cash, or contact us.', 'error');
             }
         }).render('#paypal-button-container');
     }
@@ -1310,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // ── INSTAPAY FLOW ──
             if (currentPaymentMethod === 'InstaPay') {
                 if (!selectedFileBase64) {
-                    alert('Please upload your InstaPay payment screenshot.');
+                    showNotification('Please upload your InstaPay payment screenshot.', 'warn');
                     return;
                 }
                 const ipaAddress = document.getElementById('instapay-ipa').value.trim();
@@ -1341,7 +1456,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // ── VODAFONE CASH FLOW ──
             if (currentPaymentMethod === 'VodafoneCash') {
                 if (!selectedVodafoneFileBase64) {
-                    alert('Please upload your Vodafone Cash transfer screenshot.');
+                    showNotification('Please upload your Vodafone Cash transfer screenshot.', 'warn');
                     return;
                 }
                 const walletNumber = document.getElementById('vodafone-number').value.trim();

@@ -13,6 +13,20 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- ═══════════════════════════════════════════════════════════════
+         CUSTOM NOTIFICATION MODAL  (replaces all browser alert() calls)
+         ═══════════════════════════════════════════════════════════════ -->
+    <div class="notif-overlay" id="notif-overlay" role="alertdialog" aria-modal="true" aria-labelledby="notif-title" aria-describedby="notif-msg">
+        <div class="notif-card" id="notif-card">
+            <div class="notif-icon-wrap" id="notif-icon-wrap">
+                <!-- Icon injected by JS -->
+            </div>
+            <p class="notif-title" id="notif-title"></p>
+            <p class="notif-msg"   id="notif-msg"></p>
+            <button class="notif-ok-btn" id="notif-ok-btn">OK</button>
+        </div>
+    </div>
+
     <!-- Interactive Loading Screen -->
     <div class="loader-overlay" id="loader-overlay">
         <div class="loader-content">
