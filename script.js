@@ -1120,72 +1120,109 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle Form Submission
     /* ==========================================================================
-       TAP PAYMENTS  —  goSell Integration
-       Public Key (test): pk_test_epKbVNynj5Bh7rqG9FzdRc3u
-       Switch to live key when your Tap account is activated.
+       KASHIER PAYMENTS — Vercel Serverless Function Integration
+       Hash is generated server-side via Vercel Serverless Function (secret never
+       exposed to the client). Kashier checkout opens in a styled modal iframe.
     ========================================================================== */
-    const TAP_PUBLIC_KEY = 'pk_test_epKbVNynj5Bh7rqG9FzdRc3u';
 
-    // Pending order data held in memory until Tap confirms payment
+    // Serverless Function URL
+    const KASHIER_HASH_FN = '/api/kashierHash';
+
+    // Pending order — saved only after Kashier confirms payment
     let _pendingOrderData = null;
 
-    // Initialize goSell once the library is loaded
-    function initGoSell() {
-        if (typeof goSell === 'undefined') return;
-        goSell.config({
-            containerID:  'tap-card-container',
-            gateway: {
-                publicKey:   TAP_PUBLIC_KEY,
-                language:    'en',
-                supportedCurrencies: 'all',
-                supportedPaymentMethods: 'all',
-                saveCardOption: false,
-                customerCards: false,
-                notifications: 'standard',
-                backgroundImg: { url: '', opacity: '0.5' },
-                callback: tapPaymentCallback,
-                labels: { cardNumber: 'Card Number', expirationDate: 'MM/YY', cvv: 'CVV', cardHolder: 'Name on Card', actionButton: 'Pay' },
-                style: {
-                    base: {
-                        color: '#f0ede6',
-                        lineHeight: '18px',
-                        fontFamily: 'Plus Jakarta Sans, sans-serif',
-                        fontSmoothing: 'antialiased',
-                        fontSize: '16px',
-                        '::placeholder': { color: '#6b6b78', fontSize: '15px' }
-                    },
-                    invalid: { color: '#e74c3c', iconColor: '#e74c3c' }
-                }
-            }
-        });
+    // ── Kashier Modal (iframe overlay) ──────────────────────────────────────────
+    function buildKashierModal() {
+        if (document.getElementById('kashier-modal-overlay')) return;
+        const overlay = document.createElement('div');
+        overlay.id = 'kashier-modal-overlay';
+        overlay.style.cssText = `
+            position:fixed;inset:0;z-index:99999;
+            background:rgba(0,0,0,.75);backdrop-filter:blur(6px);
+            display:none;align-items:center;justify-content:center;
+        `;
+        overlay.innerHTML = `
+            <div style="position:relative;width:min(520px,96vw);height:min(640px,90vh);
+                        background:#0e0e13;border-radius:20px;overflow:hidden;
+                        box-shadow:0 32px 80px rgba(0,0,0,.8);">
+                <button id="kashier-modal-close" style="position:absolute;top:14px;right:16px;
+                    z-index:10;background:rgba(255,255,255,.1);border:none;color:#fff;
+                    width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px;
+                    display:flex;align-items:center;justify-content:center;">✕</button>
+                <iframe id="kashier-iframe" src="" style="width:100%;height:100%;border:none;"
+                    allow="payment" sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-popups"></iframe>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        document.getElementById('kashier-modal-close').addEventListener('click', closeKashierModal);
+        overlay.addEventListener('click', e => { if (e.target === overlay) closeKashierModal(); });
     }
 
-    // Called by goSell after the user completes or cancels payment
-    function tapPaymentCallback(response) {
-        if (!response) return;
+    function openKashierModal(paymentUrl) {
+        buildKashierModal();
+        const overlay = document.getElementById('kashier-modal-overlay');
+        const iframe  = document.getElementById('kashier-iframe');
+        iframe.src = paymentUrl;
+        overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
 
-        const status = response.status;
+    function closeKashierModal() {
+        const overlay = document.getElementById('kashier-modal-overlay');
+        const iframe  = document.getElementById('kashier-iframe');
+        if (overlay) overlay.style.display = 'none';
+        if (iframe)  iframe.src = '';
+        document.body.style.overflow = '';
+    }
 
-        if (status === 'CAPTURED' || status === 'AUTHORIZED') {
-            // Payment succeeded — save the order
+    // Listen for Kashier postMessage callback (payment result)
+    window.addEventListener('message', (event) => {
+        if (!event.origin.includes('kashier.io')) return;
+        const data = event.data;
+        if (!data) return;
+        const status = (data.status || data.paymentStatus || '').toUpperCase();
+        if (status === 'SUCCESS' || status === 'CAPTURED') {
+            closeKashierModal();
             if (_pendingOrderData) {
-                _pendingOrderData.tapChargeId  = response.id || '';
-                _pendingOrderData.tapStatus    = status;
-                _pendingOrderData.paymentMethod = 'Card';
+                _pendingOrderData.kashierRef   = data.merchantOrderId || data.orderId || '';
+                _pendingOrderData.paymentMethod = 'Card (Kashier)';
                 saveNewOrder(_pendingOrderData);
-
                 playTone(523.25, 'sine', 0.15, 0.1);
                 setTimeout(() => playTone(659.25, 'sine', 0.15, 0.1), 100);
                 setTimeout(() => playTone(783.99, 'sine', 0.3,  0.1), 200);
-
                 if (checkoutModal) checkoutModal.classList.remove('active');
                 if (checkoutForm)  checkoutForm.reset();
                 _pendingOrderData = null;
             }
-        } else if (status === 'FAILED' || status === 'DECLINED' || status === 'CANCELLED') {
-            console.warn('Tap payment not completed:', status, response);
+        } else if (['FAILED','DECLINED','CANCELLED','ERROR'].includes(status)) {
+            closeKashierModal();
+            console.warn('Kashier payment result:', status, data);
         }
-    }
+    });
+
+    // Also detect success if Kashier redirects back with ?status=SUCCESS in URL
+    (function checkKashierRedirect() {
+        const params = new URLSearchParams(window.location.search);
+        const status = (params.get('status') || '').toUpperCase();
+        const ref    = params.get('merchantOrderId') || params.get('orderId') || '';
+        if (status === 'SUCCESS' && ref) {
+            // Clean URL without reloading
+            window.history.replaceState({}, '', window.location.pathname);
+            const pendingRaw = sessionStorage.getItem('_kashier_pending');
+            if (pendingRaw) {
+                try {
+                    const order = JSON.parse(pendingRaw);
+                    order.kashierRef    = ref;
+                    order.paymentMethod = 'Card (Kashier)';
+                    saveNewOrder(order);
+                    sessionStorage.removeItem('_kashier_pending');
+                    playTone(523.25, 'sine', 0.15, 0.1);
+                    setTimeout(() => playTone(659.25, 'sine', 0.15, 0.1), 100);
+                    setTimeout(() => playTone(783.99, 'sine', 0.3,  0.1), 200);
+                } catch {}
+            }
+        }
+    })();
 
     // Save order to localStorage (and optionally Firestore)
     function saveNewOrder(order) {
@@ -1205,13 +1242,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             if (typeof initLocalOrderTracker === 'function') initLocalOrderTracker();
         }
-    }
-
-    // Try to init goSell (it may load slightly after DOMContentLoaded)
-    if (typeof goSell !== 'undefined') {
-        initGoSell();
-    } else {
-        window.addEventListener('load', initGoSell);
     }
 
     /* ==========================================================================
@@ -1258,62 +1288,57 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // ── CREDIT CARD FLOW via Tap Payments ──
-            if (typeof goSell === 'undefined') {
-                alert('Payment system is loading. Please wait a moment and try again.');
-                return;
+            // ── CREDIT CARD FLOW via Kashier ──
+            const submitBtn = checkoutForm.querySelector('.checkout-submit-btn');
+            const originalText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.innerHTML = '<span>Connecting to payment...</span>';
+                submitBtn.disabled = true;
             }
 
-            // Store pending order — saved only AFTER Tap confirms payment
-            _pendingOrderData = {
-                id:            'ord_' + Date.now(),
-                name:          clientName,
-                email:         clientEmail,
-                plan:          planName,
-                price:         price + ' EGP',
-                paymentMethod: 'Card',
-                brief:         clientBrief,
-                receipt:       null,
-                status:        'pending',
-                submittedAt:   new Date().toISOString()
-            };
+            try {
+                const orderId = 'ord_' + Date.now();
 
-            // Configure this specific charge and open the lightbox
-            goSell.openLightBox({
-                customer: {
-                    first_name: clientName.split(' ')[0] || clientName,
-                    last_name:  clientName.split(' ').slice(1).join(' ') || '',
-                    email:      clientEmail,
-                    phone:      { country_code: '20', number: '' }
-                },
-                order: {
-                    amount:      price,
-                    currency:    'EGP',
-                    items: [{
-                        id:           planName.replace(/\s+/g, '_'),
-                        name:         planName,
-                        description:  clientBrief.substring(0, 100),
-                        quantity:     1,
-                        amount_per_unit: price,
-                        total_amount:    price
-                    }],
-                    shipping:    null,
-                    tax:         null
-                },
-                transaction: {
-                    mode:    'charge',
-                    charge: {
-                        saveCard:        false,
-                        threeDSecure:    true,
-                        description:     `Mohamed Abdelhamid — ${planName}`,
-                        statement_descriptor: 'MWAEL DESIGN',
-                        reference: { transaction: _pendingOrderData.id, order: _pendingOrderData.id },
-                        metadata:  { planName, clientEmail }
-                    }
+                // Call Vercel Serverless Function to get signed payment URL
+                const resp = await fetch(KASHIER_HASH_FN, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId, amount: price, currency: 'EGP' })
+                });
+
+                if (!resp.ok) throw new Error('Hash function returned ' + resp.status);
+                const { paymentUrl } = await resp.json();
+
+                // Store order in memory + sessionStorage (for redirect fallback)
+                _pendingOrderData = {
+                    id: orderId,
+                    name: clientName,
+                    email: clientEmail,
+                    plan: planName,
+                    price: price + ' EGP',
+                    paymentMethod: 'Card (Kashier)',
+                    brief: clientBrief,
+                    receipt: null,
+                    status: 'pending',
+                    submittedAt: new Date().toISOString()
+                };
+                sessionStorage.setItem('_kashier_pending', JSON.stringify(_pendingOrderData));
+
+                // Open Kashier checkout in styled iframe modal
+                openKashierModal(paymentUrl);
+
+            } catch (err) {
+                console.error('Kashier init error:', err);
+                alert('Could not connect to payment service. Please try InstaPay or contact us directly.');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
                 }
-            });
+            }
         });
     }
 
 });
+
 
