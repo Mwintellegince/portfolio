@@ -232,9 +232,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         tbody.innerHTML = orders.map((o, idx) => {
-            const payBadge = o.paymentMethod === 'instapay'
-                ? '<span class="badge instapay">InstaPay</span>'
-                : '<span class="badge card">Card / Bank</span>';
+            let payBadge = '';
+            if (o.paymentMethod === 'instapay') {
+                payBadge = '<span class="badge instapay">InstaPay</span>';
+            } else if (o.paymentMethod === 'Vodafone Cash') {
+                payBadge = '<span class="badge vodafone" style="background:#e60000; color:#fff;">Vodafone Cash</span>';
+            } else if (o.paymentMethod === 'PayPal') {
+                payBadge = '<span class="badge paypal" style="background:#0070ba; color:#fff;">PayPal</span>';
+            } else {
+                payBadge = `<span class="badge card">${esc(o.paymentMethod || 'Card / Bank')}</span>`;
+            }
 
             const receiptCell = o.receipt
                 ? `<div class="receipt-thumb" data-receipt="${o.receipt}" onclick="window._adminViewReceipt('${o.receipt}')">
@@ -293,9 +300,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? '<span class="badge approved">Approved</span>'
                 : '<span class="badge rejected">Rejected</span>';
 
-            const payBadge = o.paymentMethod === 'instapay'
-                ? '<span class="badge instapay">InstaPay</span>'
-                : '<span class="badge card">Card / Bank</span>';
+            let payBadge = '';
+            if (o.paymentMethod === 'instapay') {
+                payBadge = '<span class="badge instapay">InstaPay</span>';
+            } else if (o.paymentMethod === 'Vodafone Cash') {
+                payBadge = '<span class="badge vodafone" style="background:#e60000; color:#fff;">Vodafone Cash</span>';
+            } else if (o.paymentMethod === 'PayPal') {
+                payBadge = '<span class="badge paypal" style="background:#0070ba; color:#fff;">PayPal</span>';
+            } else {
+                payBadge = `<span class="badge card">${esc(o.paymentMethod || 'Card / Bank')}</span>`;
+            }
 
             const price = o.price ? `${o.price}` : '—';
             const date  = o.completedAt
@@ -388,19 +402,36 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!orders[idx]) return;
         const order = orders[idx];
 
-        if (order.paymentMethod === 'instapay') {
+        if (order.paymentMethod === 'instapay' || order.paymentMethod === 'Vodafone Cash') {
             // Show refund modal
             pendingRejectIdx = idx;
             setText('rm-amount', order.price ? `${order.price}` : '—');
-            setText('rm-ipa',    order.ipaAddress || order.senderIpa || 'modywaelabdouqqnb@instapay (your address)');
             setText('rm-name',   order.name || '—');
+
+            const subEl = document.getElementById('rm-sub');
+            const labelEl = document.getElementById('rm-ipa-label');
+            const ipaEl = document.getElementById('rm-ipa');
+            const warnEl = document.getElementById('rm-warn');
+
+            if (order.paymentMethod === 'instapay') {
+                if (subEl) subEl.textContent = "This order was paid via InstaPay. Transfer the amount back before confirming.";
+                if (labelEl) labelEl.textContent = "Customer IPA";
+                if (ipaEl) ipaEl.textContent = order.ipaAddress || order.senderIpa || '—';
+                if (warnEl) warnEl.innerHTML = "<strong>Action required:</strong> Open your InstaPay app and transfer the amount back to the customer's address above before clicking confirm.";
+            } else {
+                if (subEl) subEl.textContent = "This order was paid via Vodafone Cash. Transfer the amount back before confirming.";
+                if (labelEl) labelEl.textContent = "Customer Wallet";
+                if (ipaEl) ipaEl.textContent = order.walletNumber || '—';
+                if (warnEl) warnEl.innerHTML = "<strong>Action required:</strong> Open your mobile wallet app and transfer the amount back to the customer's Vodafone Cash number above before clicking confirm.";
+            }
+
             document.getElementById('refund-modal').classList.add('open');
         } else {
-            // Card / bank: auto refund note
+            // Card / bank / PayPal: auto refund note
             orders[idx].status      = 'rejected';
             orders[idx].completedAt = new Date().toISOString();
             saveOrders(orders);
-            toast(`Order rejected. Card refund typically takes 5–14 business days.`, 'error');
+            toast(`Order rejected. PayPal/Card refund typically takes 5–14 business days.`, 'error');
             loadAllData();
         }
     };
@@ -464,7 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setText('dm-email',  o.email || '—');
         setText('dm-plan',   o.plan || '—');
         setText('dm-amount', o.price || '—');
-        setText('dm-payment', o.paymentMethod === 'instapay' ? 'InstaPay' : 'Card / Bank Transfer');
+        setText('dm-payment', o.paymentMethod || '—');
         setText('dm-brief',  o.brief || o.projectBrief || '—');
         document.getElementById('detail-modal').classList.add('open');
     };

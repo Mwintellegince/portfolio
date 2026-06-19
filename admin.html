@@ -890,14 +890,14 @@
 <div class="modal-overlay" id="refund-modal">
     <div class="modal-box">
         <div class="modal-title">Manual Refund Required</div>
-        <div class="modal-sub">This order was paid via InstaPay. Transfer the amount back before confirming.</div>
+        <div class="modal-sub" id="rm-sub">This order was paid via InstaPay. Transfer the amount back before confirming.</div>
 
         <div class="modal-info-row">
             <span class="mirl">Amount</span>
             <span class="mirr gold" id="rm-amount">—</span>
         </div>
         <div class="modal-info-row">
-            <span class="mirl">Customer IPA</span>
+            <span class="mirl" id="rm-ipa-label">Customer IPA</span>
             <span class="mirr green" id="rm-ipa">—</span>
         </div>
         <div class="modal-info-row">
@@ -905,7 +905,7 @@
             <span class="mirr" id="rm-name">—</span>
         </div>
 
-        <div class="modal-warn">
+        <div class="modal-warn" id="rm-warn">
             <strong>Action required:</strong> Open your InstaPay app and transfer the amount back to the customer's address above before clicking confirm.
         </div>
 

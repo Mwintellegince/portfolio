@@ -1030,13 +1030,19 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const checkoutForm = document.getElementById('checkout-form');
     const paymentMethodBtns = document.querySelectorAll('.pay-method-btn');
-    const cardFields = document.getElementById('card-fields');
+    
+    const paypalFields = document.getElementById('paypal-fields');
     const instapayFields = document.getElementById('instapay-fields');
+    const vodafoneFields = document.getElementById('vodafone-fields');
+    
     const receiptFileInput = document.getElementById('instapay-receipt');
     const fileUploadText = document.getElementById('file-upload-text');
+    const vodafoneFileInput = document.getElementById('vodafone-receipt');
+    const vodafoneFileUploadText = document.getElementById('vodafone-file-upload-text');
 
-    let currentPaymentMethod = 'Card';
+    let currentPaymentMethod = 'PayPal';
     let selectedFileBase64 = '';
+    let selectedVodafoneFileBase64 = '';
 
     // Bind pricing buttons to open modal
     document.querySelectorAll('.select-plan-btn').forEach(btn => {
@@ -1052,9 +1058,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Reset modal inputs & show
             if (checkoutForm) checkoutForm.reset();
             selectedFileBase64 = '';
+            selectedVodafoneFileBase64 = '';
             if (fileUploadText) fileUploadText.textContent = "Upload Receipt Screenshot";
+            if (vodafoneFileUploadText) vodafoneFileUploadText.textContent = "Upload Transfer Screenshot";
             
-            setPaymentMethod('Card');
+            setPaymentMethod('PayPal');
             if (checkoutModal) checkoutModal.classList.add('active');
             playTone(600, 'sine', 0.1, 0.08);
         });
@@ -1073,7 +1081,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Toggle Credit Card vs InstaPay
+    // Toggle Payment Methods
     paymentMethodBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -1089,29 +1097,47 @@ document.addEventListener('DOMContentLoaded', () => {
             b.classList.toggle('active', b.getAttribute('data-method') === method);
         });
 
-        const cardNumEl = document.getElementById('card-number');
-        const ipaEl = document.getElementById('instapay-ipa');
+        // Hide all fields first
+        if (paypalFields) paypalFields.classList.add('hidden');
+        if (instapayFields) instapayFields.classList.add('hidden');
+        if (vodafoneFields) vodafoneFields.classList.add('hidden');
 
-        if (method === 'Card') {
-            if (cardFields) cardFields.classList.remove('hidden');
-            if (instapayFields) instapayFields.classList.add('hidden');
-            if (cardNumEl) cardNumEl.required = true;
+        // Toggle required validation fields and standard submit button
+        const ipaEl = document.getElementById('instapay-ipa');
+        const vCashNumEl = document.getElementById('vodafone-number');
+        const submitBtn = checkoutForm ? checkoutForm.querySelector('.checkout-submit-btn') : null;
+
+        if (method === 'PayPal') {
+            if (paypalFields) paypalFields.classList.remove('hidden');
             if (ipaEl) ipaEl.required = false;
-        } else {
-            if (cardFields) cardFields.classList.add('hidden');
+            if (vCashNumEl) vCashNumEl.required = false;
+            if (submitBtn) submitBtn.style.display = 'none'; // PayPal buttons handle checkout
+            renderPayPalButtons();
+        } else if (method === 'InstaPay') {
             if (instapayFields) instapayFields.classList.remove('hidden');
-            if (cardNumEl) cardNumEl.required = false;
             if (ipaEl) ipaEl.required = true;
+            if (vCashNumEl) vCashNumEl.required = false;
+            if (submitBtn) {
+                submitBtn.style.display = 'flex';
+                submitBtn.querySelector('span').textContent = 'Submit Order';
+            }
+        } else if (method === 'VodafoneCash') {
+            if (vodafoneFields) vodafoneFields.classList.remove('hidden');
+            if (ipaEl) ipaEl.required = false;
+            if (vCashNumEl) vCashNumEl.required = true;
+            if (submitBtn) {
+                submitBtn.style.display = 'flex';
+                submitBtn.querySelector('span').textContent = 'Submit Order';
+            }
         }
     }
 
-    // Convert uploaded receipt image to Base64
+    // Convert uploaded receipt images to Base64
     if (receiptFileInput) {
         receiptFileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
                 if (fileUploadText) fileUploadText.textContent = file.name;
-                
                 const reader = new FileReader();
                 reader.onload = function(evt) {
                     selectedFileBase64 = evt.target.result;
@@ -1121,111 +1147,105 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Handle Form Submission
-    /* ==========================================================================
-       KASHIER PAYMENTS — Vercel Serverless Function Integration
-       Hash is generated server-side via Vercel Serverless Function (secret never
-       exposed to the client). Kashier checkout opens in a styled modal iframe.
-    ========================================================================== */
-
-    // Serverless Function URL
-    const KASHIER_HASH_FN = '/api/kashierHash';
-
-    // Pending order — saved only after Kashier confirms payment
-    let _pendingOrderData = null;
-
-    // ── Kashier Modal (iframe overlay) ──────────────────────────────────────────
-    function buildKashierModal() {
-        if (document.getElementById('kashier-modal-overlay')) return;
-        const overlay = document.createElement('div');
-        overlay.id = 'kashier-modal-overlay';
-        overlay.style.cssText = `
-            position:fixed;inset:0;z-index:99999;
-            background:rgba(0,0,0,.75);backdrop-filter:blur(6px);
-            display:none;align-items:center;justify-content:center;
-        `;
-        overlay.innerHTML = `
-            <div style="position:relative;width:min(520px,96vw);height:min(640px,90vh);
-                        background:#0e0e13;border-radius:20px;overflow:hidden;
-                        box-shadow:0 32px 80px rgba(0,0,0,.8);">
-                <button id="kashier-modal-close" style="position:absolute;top:14px;right:16px;
-                    z-index:10;background:rgba(255,255,255,.1);border:none;color:#fff;
-                    width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px;
-                    display:flex;align-items:center;justify-content:center;">✕</button>
-                <iframe id="kashier-iframe" src="" style="width:100%;height:100%;border:none;"
-                    allow="payment" sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-popups"></iframe>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-        document.getElementById('kashier-modal-close').addEventListener('click', closeKashierModal);
-        overlay.addEventListener('click', e => { if (e.target === overlay) closeKashierModal(); });
-    }
-
-    function openKashierModal(paymentUrl) {
-        buildKashierModal();
-        const overlay = document.getElementById('kashier-modal-overlay');
-        const iframe  = document.getElementById('kashier-iframe');
-        iframe.src = paymentUrl;
-        overlay.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeKashierModal() {
-        const overlay = document.getElementById('kashier-modal-overlay');
-        const iframe  = document.getElementById('kashier-iframe');
-        if (overlay) overlay.style.display = 'none';
-        if (iframe)  iframe.src = '';
-        document.body.style.overflow = '';
-    }
-
-    // Listen for Kashier postMessage callback (payment result)
-    window.addEventListener('message', (event) => {
-        if (!event.origin.includes('kashier.io')) return;
-        const data = event.data;
-        if (!data) return;
-        const status = (data.status || data.paymentStatus || '').toUpperCase();
-        if (status === 'SUCCESS' || status === 'CAPTURED') {
-            closeKashierModal();
-            if (_pendingOrderData) {
-                _pendingOrderData.kashierRef   = data.merchantOrderId || data.orderId || '';
-                _pendingOrderData.paymentMethod = 'Card (Kashier)';
-                saveNewOrder(_pendingOrderData);
-                playTone(523.25, 'sine', 0.15, 0.1);
-                setTimeout(() => playTone(659.25, 'sine', 0.15, 0.1), 100);
-                setTimeout(() => playTone(783.99, 'sine', 0.3,  0.1), 200);
-                if (checkoutModal) checkoutModal.classList.remove('active');
-                if (checkoutForm)  checkoutForm.reset();
-                _pendingOrderData = null;
+    if (vodafoneFileInput) {
+        vodafoneFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (vodafoneFileUploadText) vodafoneFileUploadText.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    selectedVodafoneFileBase64 = evt.target.result;
+                };
+                reader.readAsDataURL(file);
             }
-        } else if (['FAILED','DECLINED','CANCELLED','ERROR'].includes(status)) {
-            closeKashierModal();
-            console.warn('Kashier payment result:', status, data);
-        }
-    });
+        });
+    }
 
-    // Also detect success if Kashier redirects back with ?status=SUCCESS in URL
-    (function checkKashierRedirect() {
-        const params = new URLSearchParams(window.location.search);
-        const status = (params.get('status') || '').toUpperCase();
-        const ref    = params.get('merchantOrderId') || params.get('orderId') || '';
-        if (status === 'SUCCESS' && ref) {
-            // Clean URL without reloading
-            window.history.replaceState({}, '', window.location.pathname);
-            const pendingRaw = sessionStorage.getItem('_kashier_pending');
-            if (pendingRaw) {
-                try {
-                    const order = JSON.parse(pendingRaw);
-                    order.kashierRef    = ref;
-                    order.paymentMethod = 'Card (Kashier)';
+    /* ==========================================================================
+       PAYPAL BUTTONS INTEGRATION (Client-side Smart Buttons)
+       ========================================================================== */
+    function renderPayPalButtons() {
+        const container = document.getElementById('paypal-button-container');
+        if (!container) return;
+        container.innerHTML = ''; // Clear any existing buttons
+
+        const planName = checkoutPlanNameInput ? checkoutPlanNameInput.value : 'Service Plan';
+        const price = checkoutPlanPriceInput ? parseInt(checkoutPlanPriceInput.value) : 0;
+        
+        // PayPal does not support EGP. Convert to USD (assume 1 USD = 50 EGP)
+        const usdAmount = (price / 50).toFixed(2);
+
+        if (typeof paypal === 'undefined') {
+            container.innerHTML = '<p style="color:var(--red);font-size:0.82rem;text-align:center;">PayPal integration is loading. Please reload if it persists.</p>';
+            return;
+        }
+
+        paypal.Buttons({
+            style: {
+                layout: 'vertical',
+                color:  'gold',
+                shape:  'rect',
+                label:  'paypal'
+            },
+            createOrder: function(data, actions) {
+                // Validate form details first
+                const clientName = document.getElementById('client-name').value.trim();
+                const clientEmail = document.getElementById('client-email').value.trim();
+                const clientBrief = document.getElementById('client-brief').value.trim();
+
+                if (!clientName || !clientEmail || !clientBrief) {
+                    alert('Please fill out your Name, Email, and Project Brief before starting the payment.');
+                    throw new Error('Form validation failed');
+                }
+
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: {
+                            currency_code: 'USD',
+                            value: usdAmount
+                        },
+                        description: `${planName} — Portfolio Client Order`
+                    }]
+                });
+            },
+            onApprove: function(data, actions) {
+                return actions.order.capture().then(function(details) {
+                    const clientName = document.getElementById('client-name').value.trim();
+                    const clientEmail = document.getElementById('client-email').value.trim();
+                    const clientBrief = document.getElementById('client-brief').value.trim();
+
+                    const order = {
+                        id:            'ord_' + Date.now(),
+                        name:          clientName,
+                        email:         clientEmail,
+                        plan:          planName,
+                        price:         price + ' EGP',
+                        paymentMethod: 'PayPal',
+                        paypalOrderId: data.orderID || details.id || '',
+                        brief:         clientBrief,
+                        receipt:       null,
+                        status:        'pending',
+                        submittedAt:   new Date().toISOString()
+                    };
+
                     saveNewOrder(order);
-                    sessionStorage.removeItem('_kashier_pending');
+
                     playTone(523.25, 'sine', 0.15, 0.1);
                     setTimeout(() => playTone(659.25, 'sine', 0.15, 0.1), 100);
                     setTimeout(() => playTone(783.99, 'sine', 0.3,  0.1), 200);
-                } catch {}
+
+                    if (checkoutModal) checkoutModal.classList.remove('active');
+                    if (checkoutForm) checkoutForm.reset();
+
+                    alert('Payment successful! Your order has been registered and is under review.');
+                });
+            },
+            onError: function(err) {
+                console.error('PayPal Smart Buttons Checkout Error:', err);
+                alert('A PayPal checkout error occurred. Please try InstaPay, Vodafone Cash, or contact us.');
             }
-        }
-    })();
+        }).render('#paypal-button-container');
+    }
 
     // Save order to localStorage (and optionally Firestore)
     function saveNewOrder(order) {
@@ -1248,7 +1268,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /* ==========================================================================
-       CHECKOUT FORM — SUBMIT HANDLER
+       CHECKOUT FORM — SUBMIT HANDLER (For Manual Flows: InstaPay / Vodafone Cash)
     ========================================================================== */
     if (checkoutForm) {
         checkoutForm.addEventListener('submit', async (e) => {
@@ -1260,7 +1280,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const clientEmail = document.getElementById('client-email').value.trim();
             const clientBrief = document.getElementById('client-brief').value.trim();
 
-            // ── INSTAPAY FLOW (unchanged manual flow) ──
+            // ── INSTAPAY FLOW ──
             if (currentPaymentMethod === 'InstaPay') {
                 if (!selectedFileBase64) {
                     alert('Please upload your InstaPay payment screenshot.');
@@ -1291,53 +1311,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // ── CREDIT CARD FLOW via Kashier ──
-            const submitBtn = checkoutForm.querySelector('.checkout-submit-btn');
-            const originalText = submitBtn ? submitBtn.innerHTML : '';
-            if (submitBtn) {
-                submitBtn.innerHTML = '<span>Connecting to payment...</span>';
-                submitBtn.disabled = true;
-            }
-
-            try {
-                const orderId = 'ord_' + Date.now();
-
-                // Call Vercel Serverless Function to get signed payment URL
-                const resp = await fetch(KASHIER_HASH_FN, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderId, amount: price, currency: 'EGP' })
-                });
-
-                if (!resp.ok) throw new Error('Hash function returned ' + resp.status);
-                const { paymentUrl } = await resp.json();
-
-                // Store order in memory + sessionStorage (for redirect fallback)
-                _pendingOrderData = {
-                    id: orderId,
-                    name: clientName,
-                    email: clientEmail,
-                    plan: planName,
-                    price: price + ' EGP',
-                    paymentMethod: 'Card (Kashier)',
-                    brief: clientBrief,
-                    receipt: null,
-                    status: 'pending',
-                    submittedAt: new Date().toISOString()
-                };
-                sessionStorage.setItem('_kashier_pending', JSON.stringify(_pendingOrderData));
-
-                // Open Kashier checkout in styled iframe modal
-                openKashierModal(paymentUrl);
-
-            } catch (err) {
-                console.error('Kashier init error:', err);
-                alert('Could not connect to payment service. Please try InstaPay or contact us directly.');
-            } finally {
-                if (submitBtn) {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
+            // ── VODAFONE CASH FLOW ──
+            if (currentPaymentMethod === 'VodafoneCash') {
+                if (!selectedVodafoneFileBase64) {
+                    alert('Please upload your Vodafone Cash transfer screenshot.');
+                    return;
                 }
+                const walletNumber = document.getElementById('vodafone-number').value.trim();
+                const order = {
+                    id:            'ord_' + Date.now(),
+                    name:          clientName,
+                    email:         clientEmail,
+                    plan:          planName,
+                    price:         price + ' EGP',
+                    paymentMethod: 'Vodafone Cash',
+                    walletNumber,
+                    brief:         clientBrief,
+                    receipt:       selectedVodafoneFileBase64,
+                    status:        'pending',
+                    submittedAt:   new Date().toISOString()
+                };
+                saveNewOrder(order);
+
+                playTone(523.25, 'sine', 0.15, 0.1);
+                setTimeout(() => playTone(659.25, 'sine', 0.15, 0.1), 100);
+                setTimeout(() => playTone(783.99, 'sine', 0.3,  0.1), 200);
+
+                if (checkoutModal) checkoutModal.classList.remove('active');
+                checkoutForm.reset();
+                return;
             }
         });
     }

@@ -512,16 +512,18 @@
                 <div class="form-group">
                     <label>Select Payment Method</label>
                     <div class="payment-method-toggle-group">
-                        <button type="button" class="pay-method-btn active" data-method="Card">Credit Card</button>
+                        <button type="button" class="pay-method-btn active" data-method="PayPal">PayPal / Card</button>
                         <button type="button" class="pay-method-btn" data-method="InstaPay">InstaPay (Egypt)</button>
+                        <button type="button" class="pay-method-btn" data-method="VodafoneCash">Vodafone Cash</button>
                     </div>
                 </div>
 
-                <!-- Card Payment Fields Container (Kashier) -->
-                <div class="payment-fields-section" id="card-fields">
-                    <p class="payment-fields-note" style="border-left-color: var(--accent-color, #d4af37);">
-                        Upon clicking "Submit & Pay", you will be redirected to the secure **Kashier** gateway inside a checkout window to complete your credit card payment.
+                <!-- PayPal Fields Container -->
+                <div class="payment-fields-section" id="paypal-fields">
+                    <p class="payment-fields-note" style="border-left-color: #0070ba; margin-bottom: 20px;">
+                        Pay securely with your PayPal balance or major credit/debit card.
                     </p>
+                    <div id="paypal-button-container" style="min-height: 150px; width: 100%;"></div>
                 </div>
 
                 <!-- InstaPay Manual Flow Fields Container -->
@@ -547,6 +549,27 @@
                             <span class="file-upload-text" id="file-upload-text">Upload Receipt Screenshot</span>
                         </label>
                         <input type="file" id="instapay-receipt" accept="image/*" class="file-input-hidden">
+                    </div>
+                </div>
+
+                <!-- Vodafone Cash Manual Flow Fields Container -->
+                <div class="payment-fields-section hidden" id="vodafone-fields">
+                    <p class="payment-fields-note warning" style="border-left-color: #e60000;">
+                        Transfer the amount to the Vodafone Cash number below: <br>
+                        <strong class="highlight" style="color: #e60000; font-size: 1.25rem;">01062137061</strong>
+                    </p>
+                    <div class="form-group">
+                        <label for="vodafone-number">Your Vodafone Cash Wallet Number</label>
+                        <input type="text" id="vodafone-number" placeholder="e.g. 010XXXXXXXX">
+                    </div>
+                    <div class="form-group">
+                        <label for="vodafone-receipt" class="file-upload-label">
+                            <span class="file-upload-icon">
+                                <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V8M12 8L9 11M12 8L15 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 15V16C3 18.2091 4.79086 20 7 20H17C19.2091 20 21 18.2091 21 16V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            <span class="file-upload-text" id="vodafone-file-upload-text">Upload Transfer Screenshot</span>
+                        </label>
+                        <input type="file" id="vodafone-receipt" accept="image/*" class="file-input-hidden">
                     </div>
                 </div>
 
@@ -614,8 +637,8 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://goSellJSLib.b-cdn.net/v2.0.4/js/gosell.js"></script>
+    <!-- PayPal SDK Integration -->
+    <script src="https://www.paypal.com/sdk/js?client-id=AY38sUqC76BfIr3gCWeu31ghxLky61yRDaTlak-uTPX2Uu-XlfSK3r96hnYEuOL7tBroVS7Kd7v5hzi7&currency=USD"></script>
     <script type="module" src="script.js"></script>
 </body>
 </html>
