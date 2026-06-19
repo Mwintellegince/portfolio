@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mohamed Abdelhamid — Portfolio</title>
+    <meta name="description" content="Personal portfolio of Mohamed Abdelhamid, Computer Engineering student & Graphic Designer based in Cairo, Egypt. Merging systems engineering with visual design.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Interactive Loading Screen -->
+    <div class="loader-overlay" id="loader-overlay">
+        <div class="loader-content">
+            <div class="loader-header">
+                <span class="loader-title">SYSTEM BOOT SEQUENCER v2.0</span>
+                <span class="loader-status" id="loader-status">RUNNING_SELF_TEST</span>
+            </div>
+            <div class="loader-terminal" id="loader-terminal"></div>
+            <div class="loader-progress-container">
+                <div class="loader-progress-bar" id="loader-progress-bar"></div>
+            </div>
+            <div class="loader-footer">
+                <span class="loader-percentage" id="loader-percentage">0%</span>
+                <div class="loader-controls-row">
+                    <button class="loader-btn" id="boost-boot-btn">Boost Boot</button>
+                    <button class="loader-btn skip" id="skip-boot-btn">Skip Boot</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scroll Progress Bar -->
+    <div class="scroll-progress" id="scroll-progress"></div>
+
+    <!-- Custom Cursor -->
+    <div class="custom-cursor" id="custom-cursor"></div>
+    <div class="custom-cursor-ring" id="custom-cursor-ring"></div>
+
+    <!-- Floating Theme Panel -->
+    <div class="theme-panel" id="theme-panel">
+        <button class="theme-panel-toggle magnetic" id="theme-panel-toggle" data-dist="12">
+            <svg class="paint-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 14.7255 3.09032 17.1962 4.85857 19C4.85857 19 4.33333 19.5 4.33333 20C4.33333 20.5 4.85857 21 5.3838 21C5.90904 21 6.5 20.5 6.5 20C6.5 19.5 7.5 19 8.5 19C9.5 19 10 19.5 10 20C10 20.5 9.5 21 9.5 21.5C9.5 22 10.5 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+        <div class="theme-options">
+            <button class="theme-opt active" data-theme="dark">Obsidian</button>
+            <button class="theme-opt" data-theme="light">Editorial</button>
+            <button class="theme-opt" data-theme="terminal">CRT Terminal</button>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <header class="site-header">
+        <div class="logo-container">
+            <a href="#" class="logo magnetic" data-dist="15">M<span>.</span></a>
+        </div>
+        <nav class="site-nav">
+            <ul>
+                <li><a href="#now" class="nav-link magnetic" data-dist="10"><span class="nav-num">01</span> Now</a></li>
+                <li><a href="#work" class="nav-link magnetic" data-dist="10"><span class="nav-num">02</span> Work</a></li>
+                <li><a href="#plans" class="nav-link magnetic" data-dist="10"><span class="nav-num">03</span> Plans</a></li>
+                <li><a href="#experience" class="nav-link magnetic" data-dist="10"><span class="nav-num">04</span> Experience</a></li>
+                <li><a href="#contact" class="nav-link magnetic" data-dist="10"><span class="nav-num">05</span> Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section id="hero" class="hero-section">
+            <div class="hero-container">
+                <div class="hero-content">
+                    <div class="hero-meta fade-in-up">
+                        <span class="location-tag">Cairo, EG</span>
+                        <span class="time-widget" id="time-widget">18:56 LOCAL</span>
+                    </div>
+                    <h1 class="hero-title fade-in-up" style="animation-delay: 0.1s;">
+                        Engineering logic. <br>
+                        <span class="serif-title">Designing form.</span>
+                    </h1>
+                    <p class="hero-intro fade-in-up" style="animation-delay: 0.2s;">
+                        I study Computer Engineering at The British University in Egypt, operating at the intersection of system architecture and visual layout. I build clean, structured codebases and design intentional digital assets.
+                    </p>
+                    <div class="hero-cta fade-in-up" style="animation-delay: 0.3s;">
+                        <a href="#work" class="btn-primary magnetic" data-dist="20">
+                            <span>Explore projects</span>
+                            <svg class="arrow-icon" viewBox="0 0 24 24" fill="none">
+                                <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-visual fade-in-up" style="animation-delay: 0.25s;">
+                    <div class="image-frame">
+                        <div class="image-bg-glow"></div>
+                        <img src="profile.png" alt="Mohamed Abdelhamid" class="profile-image">
+                    </div>
+                </div>
+            </div>
+            <div class="scroll-indicator fade-in-up" style="animation-delay: 0.5s;">
+                <span class="scroll-text">Scroll to explore</span>
+                <div class="scroll-line"></div>
+            </div>
+        </section>
+
+        <!-- Current Focus ("NOW" Section) -->
+        <section id="now" class="now-section reveal-on-scroll">
+            <div class="section-container">
+                <div class="section-header">
+                    <span class="section-num">01 /</span>
+                    <h2 class="section-title">Current Focus</h2>
+                </div>
+                <div class="now-grid">
+                    <div class="now-main">
+                        <p class="now-paragraph">
+                            Right now, I am developing a threat-prevention security system for <strong>Clowdy</strong>, a custom voice-controlled AI desktop assistant. The focus is on sandbox execution, secure API key management, and proactive vulnerability protection for Windows PCs.
+                        </p>
+                        <p class="now-paragraph">
+                            Alongside coding, I am working through university coursework in electric circuits, data structures, and computer organization, while expanding my practice in audio production and piano.
+                        </p>
+                    </div>
+                    <div class="now-sidebar">
+                        <div class="now-item">
+                            <span class="now-label">Building</span>
+                            <span class="now-value">Clowdy Core & Security Module</span>
+                        </div>
+                        <div class="now-item">
+                            <span class="now-label">Learning</span>
+                            <span class="now-value">Embedded Systems & Cryptography</span>
+                        </div>
+                        <div class="now-item">
+                            <span class="now-label">Listening</span>
+                            <span class="now-value">Ambient Piano & Electronic Audio</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Selected Work Section -->
+        <section id="work" class="work-section reveal-on-scroll">
+            <div class="section-container">
+                <div class="section-header">
+                    <span class="section-num">02 /</span>
+                    <h2 class="section-title">Selected Work</h2>
+                </div>
+                <div class="work-grid">
+                    <!-- Project 1 -->
+                    <div class="project-card">
+                        <div class="project-info">
+                            <span class="project-index">Project 01</span>
+                            <h3 class="project-name">Clowdy AI Assistant</h3>
+                            <p class="project-description">
+                                A Python-based desktop companion for Windows featuring voice command integration, screen interpretation, and automated file execution using Gemini models.
+                            </p>
+                            <div class="project-meta">
+                                <span class="tech-tag">Python</span>
+                                <span class="tech-tag">Gemini API</span>
+                                <span class="tech-tag">PyQt</span>
+                                <span class="tech-tag">Windows API</span>
+                            </div>
+                        </div>
+                        <div class="project-visual-alt">
+                            <div class="terminal-container">
+                                <div class="terminal-header">
+                                    <span class="terminal-dot red"></span>
+                                    <span class="terminal-dot yellow"></span>
+                                    <span class="terminal-dot green"></span>
+                                    <span class="terminal-title">clowdy_os.sh</span>
+                                </div>
+                                <div class="terminal-body" id="terminal-body">
+                                    <div class="terminal-line system">CLOWDY AI v1.4.2 // SECURITY: PROACTIVE</div>
+                                    <div class="terminal-line system">Select options or input help:</div>
+                                    <div class="terminal-buttons">
+                                        <button class="term-btn" data-cmd="system">system</button>
+                                        <button class="term-btn" data-cmd="about">about</button>
+                                        <button class="term-btn" data-cmd="pc_status">pc_status</button>
+                                    </div>
+                                    <div class="terminal-output" id="terminal-output"></div>
+                                    <div class="terminal-input-line">
+                                        <span class="terminal-prompt">guest@clowdy:~$</span>
+                                        <input type="text" id="terminal-input" placeholder="Type here..." autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project 2 -->
+                    <div class="project-card">
+                        <div class="project-info">
+                            <span class="project-index">Project 02</span>
+                            <h3 class="project-name">Assistive Obstacle Detector</h3>
+                            <p class="project-description">
+                                A wearable device based on Arduino Uno built to assist visually impaired users in navigating spaces via ultrasonic distance measurement.
+                            </p>
+                            <div class="project-meta">
+                                <span class="tech-tag">C++</span>
+                                <span class="tech-tag">Arduino Uno</span>
+                                <span class="tech-tag">Hardware Prototyping</span>
+                                <span class="tech-tag">Sensors</span>
+                            </div>
+                        </div>
+                        <div class="project-visual-alt">
+                            <div class="sensor-simulator">
+                                <div class="sensor-screen">
+                                    <div class="sensor-waves" id="sensor-waves"></div>
+                                    <div class="sensor-device"></div>
+                                    <div class="sensor-obstacle" id="sensor-obstacle"></div>
+                                    <span class="sensor-readout"><span id="sensor-distance">120</span> cm</span>
+                                </div>
+                                <div class="sensor-control">
+                                    <label for="distance-range" class="control-label">Simulate Obstacle Distance</label>
+                                    <input type="range" id="distance-range" min="10" max="200" value="120" class="slider-control">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project 3 -->
+                    <div class="project-card">
+                        <div class="project-info">
+                            <span class="project-index">Project 03</span>
+                            <h3 class="project-name">House Burger UI & Brand Design</h3>
+                            <p class="project-description">
+                                Created digital brand mockups and user-facing terminal menu interfaces that helped lift sales metrics by 25%.
+                            </p>
+                            <div class="project-meta">
+                                <span class="tech-tag">Branding</span>
+                                <span class="tech-tag">Digital Design</span>
+                                <span class="tech-tag">UI Layout</span>
+                            </div>
+                        </div>
+                        <div class="project-visual-alt">
+                            <div class="design-canvas-preview">
+                                <div class="canvas-shape circle"></div>
+                                <div class="canvas-shape rectangle"></div>
+                                <span class="design-grid-lines">GRID 12-COL</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Plans Section -->
+        <section id="plans" class="plans-section reveal-on-scroll">
+            <div class="section-container">
+                <div class="section-header">
+                    <span class="section-num">03 /</span>
+                    <h2 class="section-title">Design & Dev Plans</h2>
+                </div>
+                <div class="plans-grid">
+                    <!-- Plan 1 -->
+                    <div class="plan-card">
+                        <span class="plan-num">Plan 01</span>
+                        <h3 class="plan-name">Vector Brand Design</h3>
+                        <p class="plan-description">Custom vector typography, complete brand book guidelines, and SVG/layout system assets.</p>
+                        <div class="plan-price">2,500 <span class="currency">EGP</span></div>
+                        <button class="btn-primary select-plan-btn" data-plan="Vector Brand Design" data-price="2500">Order plan</button>
+                    </div>
+                    <!-- Plan 2 -->
+                    <div class="plan-card featured">
+                        <span class="plan-num">Plan 02</span>
+                        <h3 class="plan-name">Single-Page Site</h3>
+                        <p class="plan-description">Fully responsive vanilla single-page site with high-end typography, animations, and custom cursor systems.</p>
+                        <div class="plan-price">6,000 <span class="currency">EGP</span></div>
+                        <button class="btn-primary select-plan-btn" data-plan="Single-Page Site" data-price="6000">Order plan</button>
+                    </div>
+                    <!-- Plan 3 -->
+                    <div class="plan-card">
+                        <span class="plan-num">Plan 03</span>
+                        <h3 class="plan-name">Custom Engineering</h3>
+                        <p class="plan-description">Embedded software, circuit design, complex web apps, or AI assistant custom automation features.</p>
+                        <div class="plan-price">12,000 <span class="currency">EGP</span> <span class="small">+</span></div>
+                        <button class="btn-primary select-plan-btn" data-plan="Custom Engineering" data-price="12000">Request quote</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Experience Section -->
+        <section id="experience" class="experience-section reveal-on-scroll">
+            <div class="section-container">
+                <div class="section-header">
+                    <span class="section-num">04 /</span>
+                    <h2 class="section-title">Timeline</h2>
+                </div>
+                <div class="timeline">
+                    <!-- Timeline Item 1 -->
+                    <div class="timeline-item">
+                        <div class="timeline-year">2026 — Present</div>
+                        <div class="timeline-content">
+                            <h3 class="timeline-role">AI Software Developer <span class="timeline-org">/ Independent</span></h3>
+                            <p class="timeline-desc">
+                                Researching and engineering desktop utility solutions. Built Clowdy, managing screen analysis interfaces, database schemas for local memory, and system-level task controllers.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item 2 -->
+                    <div class="timeline-item">
+                        <div class="timeline-year">2025</div>
+                        <div class="timeline-content">
+                            <h3 class="timeline-role">Digital Art Designer <span class="timeline-org">/ House Burger</span></h3>
+                            <p class="timeline-desc">
+                                Executed digital marketing systems, designed social media imagery, and optimized menu design flows to raise user conversion and retention rates.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item 3 -->
+                    <div class="timeline-item">
+                        <div class="timeline-year">2025 — 2030</div>
+                        <div class="timeline-content">
+                            <h3 class="timeline-role">BA in Computer Engineering <span class="timeline-org">/ British University in Egypt</span></h3>
+                            <p class="timeline-desc">
+                                Studying electric networks, logic gates, data structures, and computer organization. Participating in academic research and structured project architectures.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Item 4 -->
+                    <div class="timeline-item">
+                        <div class="timeline-year">2019 — 2021</div>
+                        <div class="timeline-content">
+                            <h3 class="timeline-role">Arduino Hardware Developer <span class="timeline-org">/ Self-Initiated</span></h3>
+                            <p class="timeline-desc">
+                                Drafted circuit schematics, soldered components, and programmed microprocessor controllers for navigation and obstacle detection modules.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Skills & Hobbies Grid -->
+        <section class="skills-section reveal-on-scroll">
+            <div class="section-container">
+                <div class="skills-grid">
+                    <div class="skills-column">
+                        <h3 class="column-title">Technical Stack</h3>
+                        <ul class="skills-list">
+                            <li><span class="skill-name">Languages</span> <span class="skill-detail">C++, Python, Java, JavaScript, HTML/CSS</span></li>
+                            <li><span class="skill-name">Embedded</span> <span class="skill-detail">Arduino Uno, Microcontrollers, Circuit Design</span></li>
+                            <li><span class="skill-name">Frameworks</span> <span class="skill-detail">PyQt, Gemini API, Node.js basics</span></li>
+                            <li><span class="skill-name">Methodologies</span> <span class="skill-detail">Data Structures, Academic Research, System Analysis</span></li>
+                        </ul>
+                    </div>
+                    <div class="skills-column">
+                        <h3 class="column-title">Personal / Creative</h3>
+                        <ul class="skills-list">
+                            <li><span class="skill-name">Digital Design</span> <span class="skill-detail">Graphic design, branding, vector layouts</span></li>
+                            <li>
+                                <span class="skill-name">Music</span> 
+                                <span class="skill-detail">Piano (classical/ambient)</span>
+                                <div class="piano-container">
+                                    <canvas class="piano-visualizer" id="piano-visualizer" width="238" height="45"></canvas>
+                                    <div class="piano-widget">
+                                        <button class="piano-key" data-note="C4"></button>
+                                        <button class="piano-key black" data-note="C#4"></button>
+                                        <button class="piano-key" data-note="D4"></button>
+                                        <button class="piano-key black" data-note="D#4"></button>
+                                        <button class="piano-key" data-note="E4"></button>
+                                        <button class="piano-key" data-note="F4"></button>
+                                        <button class="piano-key black" data-note="F#4"></button>
+                                        <button class="piano-key" data-note="G4"></button>
+                                        <button class="piano-key black" data-note="G#4"></button>
+                                        <button class="piano-key" data-note="A4"></button>
+                                        <button class="piano-key black" data-note="A#4"></button>
+                                        <button class="piano-key" data-note="B4"></button>
+                                    </div>
+                                    <span class="piano-hint">Click keys to play notes (real-time canvas output)</span>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="skill-name">Audio</span> 
+                                <span class="skill-detail">Audio production, mixing & signal editing</span>
+                                <div class="sequencer-container">
+                                    <div class="sequencer-controls">
+                                        <button class="seq-btn" id="seq-play-btn">Play</button>
+                                        <div class="seq-bpm-control">
+                                            <span class="seq-bpm-label">BPM: <span id="seq-bpm-val">120</span></span>
+                                            <input type="range" id="seq-bpm" min="60" max="180" value="120" class="slider-control">
+                                        </div>
+                                    </div>
+                                    <div class="sequencer-grid" id="sequencer-grid"></div>
+                                    <span class="piano-hint">Program a drum loop (Kick, Snare, Hat, Synth)</span>
+                                </div>
+                            </li>
+                            <li><span class="skill-name">Languages</span> <span class="skill-detail">Arabic (Native), English (Fluent)</span></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Logic Gate Simulator Sandbox -->
+                <div class="gate-simulator-container">
+                    <h3 class="column-title">Digital Logic Sandbox</h3>
+                    <div class="gate-simulator">
+                        <div class="gate-controls">
+                            <div class="gate-control-group">
+                                <label class="gate-label">Select Gate</label>
+                                <select id="gate-type" class="gate-select">
+                                    <option value="AND">AND Gate</option>
+                                    <option value="OR">OR Gate</option>
+                                    <option value="XOR" selected>XOR Gate</option>
+                                    <option value="NAND">NAND Gate</option>
+                                </select>
+                            </div>
+                            <div class="gate-inputs">
+                                <button class="gate-input-btn" id="input-a" data-state="0">Input A: <span>0</span></button>
+                                <button class="gate-input-btn" id="input-b" data-state="0">Input B: <span>0</span></button>
+                            </div>
+                        </div>
+                        <div class="gate-visualizer">
+                            <svg class="gate-svg" viewBox="0 0 320 120">
+                                <!-- Connection Lines -->
+                                <path id="line-a" d="M20,30 L120,30" stroke="#52525b" stroke-width="3" fill="none" />
+                                <path id="line-b" d="M20,90 L120,90" stroke="#52525b" stroke-width="3" fill="none" />
+                                <path id="line-out" d="M220,60 L300,60" stroke="#52525b" stroke-width="3" fill="none" />
+                                
+                                <!-- Gate Body (Minimal SVG) -->
+                                <g id="gate-icon-group" transform="translate(120, 20)">
+                                    <rect width="100" height="80" rx="4" fill="#141417" stroke="#52525b" stroke-width="2" id="gate-rect" />
+                                    <text x="50" y="44" dominant-baseline="middle" text-anchor="middle" fill="#f4f4f5" font-family="var(--font-mono)" font-size="1.1rem" font-weight="700" id="gate-symbol-text">XOR</text>
+                                </g>
+                                
+                                <!-- Input Label Indicators -->
+                                <circle cx="20" cy="30" r="6" fill="#52525b" id="node-a"/>
+                                <circle cx="20" cy="90" r="6" fill="#52525b" id="node-b"/>
+                                <!-- Output Label Indicator -->
+                                <circle cx="300" cy="60" r="6" fill="#52525b" id="node-out"/>
+                            </svg>
+                        </div>
+                        <div class="gate-output-readout">
+                            <span class="output-label">Logic Output</span>
+                            <span class="output-value" id="gate-output">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Contact Section -->
+        <section id="contact" class="contact-section reveal-on-scroll">
+            <div class="section-container">
+                <div class="contact-wrapper">
+                    <div class="contact-left">
+                        <h2 class="contact-tagline">Let's build<br>something true.</h2>
+                        <p class="contact-subtext">Based in Cairo, Egypt. Open to software projects, embedded prototyping, and clean digital design collaborations.</p>
+                    </div>
+                    <div class="contact-right">
+                        <div class="contact-links">
+                            <a href="mailto:contact.mohamedwael.v@gmail.com" class="contact-link-item magnetic" data-dist="20">
+                                <span class="link-label">Email</span>
+                                <span class="link-text">contact.mohamedwael.v@gmail.com</span>
+                            </a>
+                            <a href="tel:+201212549545" class="contact-link-item magnetic" data-dist="20">
+                                <span class="link-label">Phone</span>
+                                <span class="link-text">+20 121 254 9545</span>
+                            </a>
+                            <a href="https://itsmohamedwael.info/" target="_blank" rel="noopener" class="contact-link-item magnetic" data-dist="20">
+                                <span class="link-label">Website</span>
+                                <span class="link-text">itsmohamedwael.info</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <span class="copyright">© 2026 Mohamed Abdelhamid. All rights reserved.</span>
+                    <span class="designer-credit">Designed & Handcoded in Cairo.</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Checkout Modal Overlay -->
+    <div class="checkout-modal-overlay" id="checkout-modal">
+        <div class="checkout-modal-card">
+            <button class="checkout-close-btn" id="close-checkout">&times;</button>
+            <h2 class="checkout-title">Initiate Request</h2>
+            <span class="checkout-plan-badge" id="checkout-plan-badge">Vector Brand Design</span>
+            
+            <form id="checkout-form" class="checkout-form">
+                <!-- Hidden plan input fields -->
+                <input type="hidden" id="checkout-plan-name">
+                <input type="hidden" id="checkout-plan-price">
+
+                <div class="form-group">
+                    <label for="client-name">Your Name</label>
+                    <input type="text" id="client-name" required placeholder="e.g. John Doe">
+                </div>
+                
+                <div class="form-group">
+                    <label for="client-email">Email Address</label>
+                    <input type="email" id="client-email" required placeholder="e.g. john@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="client-brief">Project Brief Description</label>
+                    <textarea id="client-brief" rows="3" required placeholder="Describe what you want me to design or build..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Payment Method</label>
+                    <div class="payment-method-toggle-group">
+                        <button type="button" class="pay-method-btn active" data-method="Card">Credit Card</button>
+                        <button type="button" class="pay-method-btn" data-method="InstaPay">InstaPay (Egypt)</button>
+                    </div>
+                </div>
+
+                <!-- Card Payment Fields Container (Tap Payments) -->
+                <div class="payment-fields-section" id="card-fields">
+                    <div class="form-group">
+                        <label>Card Details</label>
+                        <div id="tap-card-container" style="min-height:48px;"></div>
+                        <p style="font-size:.72rem;color:#6b6b78;margin-top:8px;">Secured by Tap Payments · Visa, Mastercard, Meeza accepted</p>
+                    </div>
+                </div>
+
+                <!-- InstaPay Manual Flow Fields Container -->
+                <div class="payment-fields-section hidden" id="instapay-fields">
+                    <p class="payment-fields-note warning">
+                        Transfer the amount to the address below: <br>
+                        <strong class="highlight">modywaelabdouqqnb@instapay</strong>
+                    </p>
+                    <div class="form-group">
+                        <label for="instapay-ipa">Your InstaPay Address (IPA) or Phone</label>
+                        <input type="text" id="instapay-ipa" placeholder="yourname@instapay">
+                    </div>
+                    <div class="form-group">
+                        <label for="instapay-receipt" class="file-upload-label">
+                            <span class="file-upload-icon">
+                                <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V8M12 8L9 11M12 8L15 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 15V16C3 18.2091 4.79086 20 7 20H17C19.2091 20 21 18.2091 21 16V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            <span class="file-upload-text" id="file-upload-text">Upload Receipt Screenshot</span>
+                        </label>
+                        <input type="file" id="instapay-receipt" accept="image/*" class="file-input-hidden">
+                    </div>
+                </div>
+
+                <!-- Review and Refund Notice Box -->
+                <div class="checkout-notice-box">
+                    <p class="notice-item"><strong>Review Timeline:</strong> Orders are manually verified. Expect acceptance or rejection within 1 to 4 business days.</p>
+                    <p class="notice-item"><strong>Refund Policy:</strong> If rejected, your payment is fully returned. Card refunds take 5 to 14 business days to appear in your bank account depending on your bank's clearing process. InstaPay payments are manually refunded back to your IPA.</p>
+                </div>
+
+                <button type="submit" class="btn-primary checkout-submit-btn" style="width:100%; justify-content:center;">
+                    <span>Submit & Pay</span>
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- Floating Order Tracker Widget (Hidden by default, shown if active order exists) -->
+    <div class="order-tracker-capsule hidden" id="order-tracker-capsule">
+        <div class="tracker-dot pulse"></div>
+        <span class="tracker-text">Track Active Order</span>
+    </div>
+
+    <!-- Order Tracker Modal -->
+    <div class="tracker-modal-overlay" id="tracker-modal">
+        <div class="tracker-modal-card">
+            <button class="tracker-close-btn" id="close-tracker">&times;</button>
+            <h3 class="tracker-title">Active Request Status</h3>
+            
+            <div class="tracker-status-box">
+                <div class="tracker-row">
+                    <span class="tracker-label">Order ID</span>
+                    <span class="tracker-value" id="track-id">-</span>
+                </div>
+                <div class="tracker-row">
+                    <span class="tracker-label">Plan</span>
+                    <span class="tracker-value highlight" id="track-plan">-</span>
+                </div>
+                <div class="tracker-row">
+                    <span class="tracker-label">Status</span>
+                    <span class="tracker-value badge" id="track-status">-</span>
+                </div>
+                <div class="tracker-row">
+                    <span class="tracker-label">Last Updated</span>
+                    <span class="tracker-value" id="track-time">-</span>
+                </div>
+            </div>
+
+            <div class="tracker-timeline">
+                <div class="timeline-step" id="step-submitted">
+                    <div class="step-indicator">1</div>
+                    <div class="step-details">
+                        <h4 class="step-title">Submitted</h4>
+                        <p class="step-desc">Order request received and awaiting validation.</p>
+                    </div>
+                </div>
+                <div class="timeline-step" id="step-processing">
+                    <div class="step-indicator">2</div>
+                    <div class="step-details">
+                        <h4 class="step-title">Processing / Refunded</h4>
+                        <p class="step-desc" id="step-processing-desc">Admin review and payment confirmation.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://goSellJSLib.b-cdn.net/v2.0.4/js/gosell.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
