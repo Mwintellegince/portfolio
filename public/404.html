@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 — Page Not Found</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #070709;
+            --card-bg: #0e0e13;
+            --text-color: #f0ede6;
+            --text-muted: #8e8d99;
+            --accent-color: #d4af37;
+            --accent-glow: rgba(212, 175, 55, 0.15);
+            --font-serif: 'Playfair Display', serif;
+            --font-sans: 'Plus Jakarta Sans', sans-serif;
+            --font-syne: 'Syne', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Subtle grid background pattern */
+        body::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 24px 24px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            z-index: 10;
+            position: relative;
+            padding: 40px 20px;
+        }
+
+        .glitch-num {
+            font-family: var(--font-syne);
+            font-size: clamp(6rem, 15vw, 10rem);
+            font-weight: 800;
+            line-height: 1;
+            color: var(--accent-color);
+            text-shadow: 0 0 40px var(--accent-glow);
+            margin-bottom: 10px;
+            letter-spacing: -2px;
+            animation: pulse 4s infinite ease-in-out;
+        }
+
+        .title {
+            font-family: var(--font-serif);
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+
+        .description {
+            font-size: 1rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 40px;
+            font-weight: 300;
+        }
+
+        .btn-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: transparent;
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+            padding: 14px 28px;
+            border-radius: 40px;
+            font-family: var(--font-sans);
+            font-weight: 500;
+            font-size: 0.95rem;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-home::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--accent-color);
+            z-index: -1;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-home:hover {
+            color: #000;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 30px var(--accent-glow);
+            transform: translateY(-2px);
+        }
+
+        .btn-home:hover::before {
+            transform: translateY(0);
+        }
+
+        .btn-home svg {
+            width: 18px;
+            height: 18px;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-home:hover svg {
+            transform: translateX(-4px);
+        }
+
+        /* Abstract glowing particles for high-end aesthetic */
+        .glow-orb {
+            position: absolute;
+            width: clamp(200px, 50vw, 400px);
+            height: clamp(200px, 50vw, 400px);
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            pointer-events: none;
+            filter: blur(40px);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.95;
+            }
+            50% {
+                transform: scale(1.03);
+                opacity: 1;
+                text-shadow: 0 0 60px rgba(212, 175, 55, 0.25);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-orb"></div>
+    
+    <div class="container">
+        <div class="glitch-num">404</div>
+        <h1 class="title">System Out of Bounds</h1>
+        <p class="description">
+            The page you are looking for has either been moved, deleted, or does not exist in this sector of the system database.
+        </p>
+        <a href="/" class="btn-home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Return to Terminal
+        </a>
+    </div>
+</body>
+</html>

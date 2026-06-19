@@ -1089,16 +1089,19 @@ document.addEventListener('DOMContentLoaded', () => {
             b.classList.toggle('active', b.getAttribute('data-method') === method);
         });
 
+        const cardNumEl = document.getElementById('card-number');
+        const ipaEl = document.getElementById('instapay-ipa');
+
         if (method === 'Card') {
             if (cardFields) cardFields.classList.remove('hidden');
             if (instapayFields) instapayFields.classList.add('hidden');
-            document.getElementById('card-number').required = true;
-            document.getElementById('instapay-ipa').required = false;
+            if (cardNumEl) cardNumEl.required = true;
+            if (ipaEl) ipaEl.required = false;
         } else {
             if (cardFields) cardFields.classList.add('hidden');
             if (instapayFields) instapayFields.classList.remove('hidden');
-            document.getElementById('card-number').required = false;
-            document.getElementById('instapay-ipa').required = true;
+            if (cardNumEl) cardNumEl.required = false;
+            if (ipaEl) ipaEl.required = true;
         }
     }
 
