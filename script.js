@@ -750,7 +750,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (type === 'error' || type === 'warn') notifOkBtn.classList.add('error-btn');
         if (type === 'success') notifOkBtn.classList.add('success-btn');
 
-        // Show modal
+        // Show modal & override custom cursor to reveal default browser pointer
+        document.body.classList.add('has-error-notif');
         notifOverlay.classList.add('active');
         playNotifSound(type);
 
@@ -763,13 +764,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (notifOkBtn) {
         notifOkBtn.addEventListener('click', () => {
             notifOverlay.classList.remove('active');
+            document.body.classList.remove('has-error-notif');
         });
     }
 
     // Close on backdrop click
     if (notifOverlay) {
         notifOverlay.addEventListener('click', (e) => {
-            if (e.target === notifOverlay) notifOverlay.classList.remove('active');
+            if (e.target === notifOverlay) {
+                notifOverlay.classList.remove('active');
+                document.body.classList.remove('has-error-notif');
+            }
         });
     }
 
@@ -777,6 +782,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && notifOverlay && notifOverlay.classList.contains('active')) {
             notifOverlay.classList.remove('active');
+            document.body.classList.remove('has-error-notif');
         }
     });
 
