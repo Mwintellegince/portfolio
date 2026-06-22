@@ -13,6 +13,8 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Ambient Background Canvas (glowing slow floaters) -->
+    <canvas class="ambient-canvas" id="ambient-canvas"></canvas>
     <!-- ═══════════════════════════════════════════════════════════════
          CUSTOM NOTIFICATION MODAL  (replaces all browser alert() calls)
          ═══════════════════════════════════════════════════════════════ -->
@@ -69,6 +71,17 @@
         </div>
     </div>
 
+    <!-- Floating Cinematic Panel -->
+    <div class="cinematic-panel" id="cinematic-panel">
+        <button class="cinematic-toggle magnetic" id="cinematic-toggle" data-dist="12" aria-label="Toggle Cinematic View">
+            <svg class="cinema-icon" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M6 4v16M18 4v16M2 8h4M2 12h4M2 16h4M18 8h4M18 12h4M18 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+    </div>
+
+
     <!-- Navigation Header -->
     <header class="site-header">
         <div class="logo-container">
@@ -81,6 +94,7 @@
                 <li><a href="#plans" class="nav-link magnetic" data-dist="10"><span class="nav-num">03</span> Plans</a></li>
                 <li><a href="#experience" class="nav-link magnetic" data-dist="10"><span class="nav-num">04</span> Experience</a></li>
                 <li><a href="#contact" class="nav-link magnetic" data-dist="10"><span class="nav-num">05</span> Contact</a></li>
+                <li><a href="#" id="menu-policies-btn" class="nav-link magnetic" data-dist="10"><span class="nav-num">06</span> Policies</a></li>
             </ul>
         </nav>
         <!-- Hamburger (visible on mobile only) -->
@@ -120,7 +134,7 @@
                 <div class="hero-visual fade-in-up" style="animation-delay: 0.25s;">
                     <div class="image-frame">
                         <div class="image-bg-glow"></div>
-                        <img src="profile.png" alt="Mohamed Abdelhamid" class="profile-image">
+                        <img src="profile.png" alt="Mohamed Abdelhamid" class="profile-image" decoding="async" fetchpriority="high">
                     </div>
                 </div>
             </div>
@@ -496,6 +510,9 @@
                 </div>
                 <div class="footer-bottom">
                     <span class="copyright">© 2026 Mohamed Abdelhamid. All rights reserved.</span>
+                    <span class="footer-links" style="display:flex; gap:15px; font-family:var(--font-mono); font-size:0.75rem; text-transform:uppercase;">
+                        <a href="policies.html" class="footer-policy-link" style="color:var(--text-muted); text-decoration:none; transition:var(--transition-fast);" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-muted)'">Terms & Policies</a>
+                    </span>
                     <span class="designer-credit">Designed & Handcoded in Cairo.</span>
                 </div>
             </div>
@@ -554,7 +571,7 @@
                     </p>
                     <div style="display:flex; justify-content:center; margin: 15px 0 20px 0;">
                         <div style="background:#fff; padding:12px; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.3); display:inline-block;">
-                            <img src="instapay-qr.png" alt="InstaPay QR Code" style="width:160px; height:160px; display:block;">
+                            <img src="instapay-qr.png" alt="InstaPay QR Code" style="width:160px; height:160px; display:block;" loading="lazy">
                         </div>
                     </div>
                     <div class="form-group">
@@ -596,8 +613,10 @@
                 <!-- Review and Refund Notice Box -->
                 <div class="checkout-notice-box">
                     <p class="notice-item"><strong>Review Timeline:</strong> Orders are manually verified. Expect acceptance or rejection within 1 to 4 business days.</p>
-                    <p class="notice-item"><strong>Refund Policy:</strong> If rejected, your payment is fully returned. Card refunds take 5 to 14 business days to appear in your bank account depending on your bank's clearing process. InstaPay payments are manually refunded back to your IPA.</p>
+                    <p class="notice-item"><strong>Refund Policy:</strong> If rejected, your payment is fully returned. Card refunds take 5 to 14 business days. See full details in our <a href="policies.html#refund" target="_blank" class="checkout-policy-link">Refund Policy</a>.</p>
+                    <p class="notice-compliance-item" style="font-size:0.75rem; color:var(--text-muted); margin-top:10px; border-top:1px solid var(--border-color); padding-top:10px; font-family:var(--font-sans);">By submitting, you agree to our <a href="policies.html" target="_blank" class="checkout-policy-link" style="color:var(--accent); text-decoration:underline;">Terms & Policies</a>.</p>
                 </div>
+
 
                 <button type="submit" class="btn-primary checkout-submit-btn" style="width:100%; justify-content:center;">
                     <span>Submit & Pay</span>
@@ -653,6 +672,114 @@
                         <p class="step-desc" id="step-processing-desc">Admin review and payment confirmation.</p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cinematic Mode Overlay Elements -->
+    <div class="cinematic-bar-top" id="cinematic-bar-top"></div>
+    <div class="cinematic-bar-bottom" id="cinematic-bar-bottom"></div>
+    <div class="cinematic-vignette" id="cinematic-vignette"></div>
+    
+    <!-- Cinematic Mode Bottom Controls -->
+    <div class="cinematic-controls" id="cinematic-controls">
+        <button class="cinematic-ctrl-btn" id="cinematic-play-btn" aria-label="Play/Pause Auto Scroll">
+            <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor" style="width:14px; height:14px;">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <svg class="pause-icon hidden" viewBox="0 0 24 24" fill="currentColor" style="width:14px; height:14px;">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+            <span>Auto Scroll</span>
+        </button>
+        <button class="cinematic-ctrl-btn" id="cinematic-audio-btn" aria-label="Toggle Ambient Audio">
+            <svg class="mute-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px;">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <line x1="23" y1="9" x2="17" y2="15"></line>
+                <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+            <svg class="sound-icon hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px;">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+            <span>Ambient Audio</span>
+        </button>
+        <button class="cinematic-ctrl-btn exit" id="cinematic-exit-btn">
+            <span>Exit Cinematic</span>
+        </button>
+    </div>
+
+    <!-- Policies Slide-out Drawer Panel -->
+    <div class="policies-drawer-overlay" id="policies-drawer-overlay"></div>
+    <div class="policies-drawer" id="policies-drawer">
+        <button class="policies-drawer-close" id="policies-drawer-close" aria-label="Close Policies Panel">&times;</button>
+        <div class="policies-drawer-content">
+            <h2 class="policies-drawer-title">Terms & Policies</h2>
+            <div class="policies-drawer-meta">Last Updated: June 2026</div>
+
+            <nav class="policies-drawer-nav">
+                <a href="#drawer-terms" class="policies-drawer-nav-link active">Terms of Service</a>
+                <a href="#drawer-privacy" class="policies-drawer-nav-link">Privacy Policy</a>
+                <a href="#drawer-refund" class="policies-drawer-nav-link">Refund Policy</a>
+            </nav>
+
+            <div class="policies-drawer-sections">
+                <!-- Terms of Service -->
+                <section id="drawer-terms" class="policies-drawer-section">
+                    <h3 class="policies-drawer-section-title">01 / Terms of Service</h3>
+                    <p class="policies-drawer-text">
+                        Welcome to the personal platform of Mohamed Abdelhamid. By accessing this website or placing an order, you agree to comply with and be bound by the following terms.
+                    </p>
+                    <h4 class="policies-drawer-sub-title">Service Rendered</h4>
+                    <p class="policies-drawer-text">
+                        Services include digital graphic branding ("Vector Brand Design"), website development ("Single-Page Site"), and system automation ("Custom Engineering"). The specifications of each package are detailed in the Plans section of the website.
+                    </p>
+                    <h4 class="policies-drawer-sub-title">Intellectual Property</h4>
+                    <p class="policies-drawer-text">
+                        All original concept designs, code files, and assets created during production remain the intellectual property of Mohamed Abdelhamid until the final balance payment is processed. Upon completion of payment, full ownership rights for final deliverables transfer to the client.
+                    </p>
+                </section>
+
+                <!-- Privacy Policy -->
+                <section id="drawer-privacy" class="policies-drawer-section">
+                    <h3 class="policies-drawer-section-title">02 / Privacy Policy</h3>
+                    <p class="policies-drawer-text">
+                        Your privacy is highly respected. This policy outlines how information submitted through the checkout portal is processed.
+                    </p>
+                    <h4 class="policies-drawer-sub-title">Data Collection</h4>
+                    <p class="policies-drawer-text">
+                        When you place an order, the following details are gathered: Name, Email Address, chosen service package, project briefs, and payment screenshots.
+                    </p>
+                    <h4 class="policies-drawer-sub-title">Data Usage & Security</h4>
+                    <p class="policies-drawer-text">
+                        Your data is solely used to verify payments, manage orders, and establish contact. Details are stored locally in LocalStorage and synchronized securely with a private database (Firebase Firestore) if active. No details are shared with third parties.
+                    </p>
+                </section>
+
+                <!-- Refund Policy -->
+                <section id="drawer-refund" class="policies-drawer-section">
+                    <h3 class="policies-drawer-section-title">03 / Refund Policy</h3>
+                    <p class="policies-drawer-text">
+                        This refund and cancellation policy governs all transactions conducted on this website.
+                    </p>
+                    <div class="policies-drawer-highlight">
+                        <p><strong>Order Review:</strong> All order requests are manually reviewed by the administrator. Approval or rejection decisions are made within <strong>1 to 4 business days</strong> from submission.</p>
+                    </div>
+                    <h4 class="policies-drawer-sub-title">Rejection & Full Refunds</h4>
+                    <p class="policies-drawer-text">
+                        If your request is rejected or cancelled during the manual review phase, you will receive a <strong>100% full refund</strong>:
+                    </p>
+                    <ul class="policies-drawer-list">
+                        <li><strong>PayPal / Credit Card:</strong> Refunded instantly. Card refunds take <strong>5 to 14 business days</strong> to settle in your account.</li>
+                        <li><strong>InstaPay (Egypt):</strong> Transferred back manually to your submitted InstaPay Address (IPA).</li>
+                        <li><strong>Vodafone Cash:</strong> Sent back directly to your transfer wallet number.</li>
+                    </ul>
+                    <h4 class="policies-drawer-sub-title">Non-Refundable Circumstances</h4>
+                    <p class="policies-drawer-text">
+                        Refunds will not be issued once order details have been approved and active design/coding work on the project has officially commenced. False screenshot uploads result in automatic rejection.
+                    </p>
+                </section>
             </div>
         </div>
     </div>

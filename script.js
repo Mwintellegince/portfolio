@@ -1,5 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    // Force page scroll reset to top on refresh
+    if (history.scrollRestoration) {
+        history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+    if (window.location.hash) {
+        history.replaceState(null, null, ' ');
+    }
+
     /* ==========================================================================
        FIREBASE CONFIGURATION & SYNCHRONIZATION (OPTIONAL)
        ========================================================================== */
@@ -306,29 +315,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const cursorDot = document.getElementById('custom-cursor');
     const cursorRing = document.getElementById('custom-cursor-ring');
 
-    let mouseX = 0;
-    let mouseY = 0;
-    let ringX = 0;
-    let ringY = 0;
+    let mouseX = -100;
+    let mouseY = -100;
+    let ringX = -100;
+    let ringY = -100;
 
     // Track mouse coordinates
     document.addEventListener('mousemove', (e) => {
         mouseX = e.clientX;
         mouseY = e.clientY;
         
-        cursorDot.style.left = `${mouseX}px`;
-        cursorDot.style.top = `${mouseY}px`;
+        if (cursorDot) {
+            cursorDot.style.setProperty('--cursor-x', `${mouseX}px`);
+            cursorDot.style.setProperty('--cursor-y', `${mouseY}px`);
+        }
     });
 
     // Smoothly animate the outer trailing cursor ring
     function animateRing() {
         // Linear interpolation for smooth trailing
         const delay = 8; // Adjust speed (higher = slower trailing)
-        ringX += (mouseX - ringX) / delay;
-        ringY += (mouseY - ringY) / delay;
+        
+        if (ringX === -100 && ringY === -100 && mouseX !== -100) {
+            ringX = mouseX;
+            ringY = mouseY;
+        } else {
+            ringX += (mouseX - ringX) / delay;
+            ringY += (mouseY - ringY) / delay;
+        }
 
-        cursorRing.style.left = `${ringX}px`;
-        cursorRing.style.top = `${ringY}px`;
+        if (cursorRing) {
+            cursorRing.style.setProperty('--ring-x', `${ringX}px`);
+            cursorRing.style.setProperty('--ring-y', `${ringY}px`);
+        }
 
         requestAnimationFrame(animateRing);
     }
@@ -392,17 +411,25 @@ document.addEventListener('DOMContentLoaded', () => {
        ========================================================================== */
     const revealElements = document.querySelectorAll('.reveal-on-scroll');
     
-    const revealObserver = new IntersectionObserver((entries, observer) => {
+    const revealObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
+            const rect = entry.boundingClientRect;
+            const isExitingTop = !entry.isIntersecting && rect.top < 0;
+            
             if (entry.isIntersecting) {
                 entry.target.classList.add('revealed');
-                // Unobserve once revealed to keep layout responsive
-                observer.unobserve(entry.target);
+                entry.target.classList.remove('faded-up');
+            } else if (isExitingTop) {
+                entry.target.classList.remove('revealed');
+                entry.target.classList.add('faded-up');
+            } else {
+                entry.target.classList.remove('revealed');
+                entry.target.classList.remove('faded-up');
             }
         });
     }, {
-        threshold: 0.15,
-        rootMargin: '0px 0px -50px 0px' // Trigger slightly before element enters view fully
+        threshold: 0.05,
+        rootMargin: '0px 0px 0px 0px'
     });
 
     revealElements.forEach(element => {
@@ -410,35 +437,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /* ==========================================================================
-       ACTIVE LINK ON SCROLL & SCROLL PROGRESS TRACKING
+       ACTIVE LINK ON SCROLL & SCROLL PROGRESS TRACKING (THROTTLED)
        ========================================================================== */
     const sections = document.querySelectorAll('section');
     const navLinks = document.querySelectorAll('.nav-link');
     const scrollProgress = document.getElementById('scroll-progress');
 
+    let scrollScheduled = false;
     window.addEventListener('scroll', () => {
-        let currentSectionId = '';
-        
-        // Update Scroll Progress bar
-        const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-        if (totalHeight > 0) {
-            const progress = (window.scrollY / totalHeight) * 100;
-            scrollProgress.style.width = `${progress}%`;
+        if (!scrollScheduled) {
+            scrollScheduled = true;
+            requestAnimationFrame(() => {
+                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+                if (totalHeight > 0 && scrollProgress) {
+                    const progress = (window.scrollY / totalHeight) * 100;
+                    scrollProgress.style.width = `${progress}%`;
+                }
+
+                let currentSectionId = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (window.scrollY >= (sectionTop - 250)) {
+                        currentSectionId = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${currentSectionId}`) {
+                        link.classList.add('active');
+                    }
+                });
+                
+                scrollScheduled = false;
+            });
         }
-
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            if (pageYOffset >= (sectionTop - 250)) {
-                currentSectionId = section.getAttribute('id');
-            }
-        });
-
-        navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === `#${currentSectionId}`) {
-                link.classList.add('active');
-            }
-        });
     });
 
     /* ==========================================================================
@@ -835,6 +868,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (loaderStatus) loaderStatus.textContent = "BOOT_SUCCESSFUL";
         if (loaderOverlay) loaderOverlay.classList.add('loaded');
+        
+        document.body.classList.add('boot-completed');
         
         playBootChime();
         
@@ -1483,6 +1518,415 @@ document.addEventListener('DOMContentLoaded', () => {
                 checkoutForm.reset();
                 return;
             }
+        });
+    }
+
+    /* ==========================================================================
+       CINEMATIC VIEW MODE & AMBIENT AUDIO SYNTHESIZER
+       ========================================================================== */
+    const cinematicToggle = document.getElementById('cinematic-toggle');
+    const cinematicExit = document.getElementById('cinematic-exit-btn');
+    const cinematicPlay = document.getElementById('cinematic-play-btn');
+    const cinematicAudio = document.getElementById('cinematic-audio-btn');
+    
+    let cinematicActive = false;
+    let autoScrollActive = false;
+    let ambientAudioActive = false;
+    
+    let autoScrollTimer = null;
+    const scrollSpeed = 0.6; // buttery slow speed in pixels per frame
+    
+    let ambientTimer = null;
+    let ambientOscillators = [];
+    let ambientGainNodes = [];
+    let currentChordIndex = 0;
+    
+    const ambientChords = [
+        [130.81, 196.00, 261.63, 329.63, 493.88, 587.33], // Cmaj9
+        [87.31, 174.61, 261.63, 349.23, 440.00, 523.25],  // Fmaj9
+        [110.00, 220.00, 329.63, 392.00, 493.88, 587.33], // Am9
+        [98.00, 196.00, 293.66, 392.00, 440.00, 587.33]   // G6/11
+    ];
+
+    function toggleCinematicMode() {
+        cinematicActive = !cinematicActive;
+        document.body.classList.toggle('cinematic-active', cinematicActive);
+        
+        if (cinematicActive) {
+            playTone(110.00, 'triangle', 1.5, 0.1); // Play deep atmospheric entry tone
+            setTimeout(() => playTone(220.00, 'sine', 1.8, 0.08), 200);
+            
+            autoScrollActive = true;
+            updateAutoScrollUI();
+            runAutoScroll();
+            
+            ambientAudioActive = true;
+            updateAudioUI();
+            startAmbientSynthesizer();
+        } else {
+            stopCinematicServices();
+        }
+    }
+
+    function stopCinematicServices() {
+        cinematicActive = false;
+        document.body.classList.remove('cinematic-active');
+        
+        autoScrollActive = false;
+        updateAutoScrollUI();
+        if (autoScrollTimer) cancelAnimationFrame(autoScrollTimer);
+        
+        ambientAudioActive = false;
+        updateAudioUI();
+        stopAmbientSynthesizer();
+        
+        playTone(392.00, 'sine', 0.4, 0.08); // Exit chime
+        setTimeout(() => playTone(261.63, 'sine', 0.5, 0.1), 100);
+    }
+
+    function runAutoScroll() {
+        if (!autoScrollActive || !cinematicActive) return;
+        window.scrollBy(0, scrollSpeed);
+        
+        const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+        if (window.scrollY >= totalHeight - 2) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            autoScrollActive = false;
+            updateAutoScrollUI();
+            
+            setTimeout(() => {
+                if (cinematicActive) {
+                    autoScrollActive = true;
+                    updateAutoScrollUI();
+                    runAutoScroll();
+                }
+            }, 3000);
+            return;
+        }
+        
+        autoScrollTimer = requestAnimationFrame(runAutoScroll);
+    }
+
+    function updateAutoScrollUI() {
+        if (!cinematicPlay) return;
+        const playIcon = cinematicPlay.querySelector('.play-icon');
+        const pauseIcon = cinematicPlay.querySelector('.pause-icon');
+        
+        cinematicPlay.classList.toggle('active', autoScrollActive);
+        if (autoScrollActive) {
+            if (playIcon) playIcon.classList.add('hidden');
+            if (pauseIcon) pauseIcon.classList.remove('hidden');
+        } else {
+            if (playIcon) playIcon.classList.remove('hidden');
+            if (pauseIcon) pauseIcon.classList.add('hidden');
+        }
+    }
+
+    function updateAudioUI() {
+        if (!cinematicAudio) return;
+        const muteIcon = cinematicAudio.querySelector('.mute-icon');
+        const soundIcon = cinematicAudio.querySelector('.sound-icon');
+        
+        cinematicAudio.classList.toggle('active', ambientAudioActive);
+        if (ambientAudioActive) {
+            if (muteIcon) muteIcon.classList.add('hidden');
+            if (soundIcon) soundIcon.classList.remove('hidden');
+        } else {
+            if (muteIcon) muteIcon.classList.remove('hidden');
+            if (soundIcon) soundIcon.classList.add('hidden');
+        }
+    }
+
+    function startAmbientSynthesizer() {
+        if (ambientTimer) clearInterval(ambientTimer);
+        triggerAmbientChord();
+        
+        ambientTimer = setInterval(() => {
+            if (!ambientAudioActive) return;
+            triggerAmbientChord();
+        }, 6000);
+    }
+
+    function stopAmbientSynthesizer() {
+        if (ambientTimer) {
+            clearInterval(ambientTimer);
+            ambientTimer = null;
+        }
+        
+        const ctx = getAudioContext();
+        const fadeTime = 0.5;
+        
+        ambientGainNodes.forEach(gainNode => {
+            try {
+                gainNode.gain.cancelScheduledValues(ctx.currentTime);
+                gainNode.gain.setValueAtTime(gainNode.gain.value, ctx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.001, ctx.currentTime + fadeTime);
+            } catch (e) {}
+        });
+        
+        setTimeout(() => {
+            ambientOscillators.forEach(osc => { try { osc.stop(); } catch(e){} });
+            ambientOscillators = [];
+            ambientGainNodes = [];
+        }, fadeTime * 1000 + 50);
+    }
+
+    function triggerAmbientChord() {
+        try {
+            const ctx = getAudioContext();
+            const now = ctx.currentTime;
+            
+            const masterFilter = ctx.createBiquadFilter();
+            masterFilter.type = 'lowpass';
+            masterFilter.frequency.setValueAtTime(320, now);
+            masterFilter.Q.setValueAtTime(2.5, now);
+            
+            const lfo = ctx.createOscillator();
+            const lfoGain = ctx.createGain();
+            lfo.frequency.setValueAtTime(0.12, now);
+            lfoGain.gain.setValueAtTime(140, now);
+            
+            lfo.connect(lfoGain);
+            lfoGain.connect(masterFilter.frequency);
+            lfo.start(now);
+            ambientOscillators.push(lfo);
+            
+            if (analyserNode) {
+                masterFilter.connect(analyserNode);
+            } else {
+                masterFilter.connect(ctx.destination);
+            }
+
+            const chordFreqs = ambientChords[currentChordIndex];
+            currentChordIndex = (currentChordIndex + 1) % ambientChords.length;
+
+            chordFreqs.forEach((freq) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, now);
+                
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.05, now + 2.0);
+                gain.gain.setValueAtTime(0.05, now + 3.5);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 6.0);
+                
+                osc.connect(gain);
+                gain.connect(masterFilter);
+                
+                osc.start(now);
+                osc.stop(now + 6.0);
+                
+                ambientOscillators.push(osc);
+                ambientGainNodes.push(gain);
+            });
+        } catch (e) {
+            console.warn("Ambient synthesizer failed to run: ", e);
+        }
+    }
+
+    if (cinematicToggle) {
+        cinematicToggle.addEventListener('click', toggleCinematicMode);
+    }
+    
+    if (cinematicExit) {
+        cinematicExit.addEventListener('click', stopCinematicServices);
+    }
+
+    if (cinematicPlay) {
+        cinematicPlay.addEventListener('click', () => {
+            autoScrollActive = !autoScrollActive;
+            updateAutoScrollUI();
+            playTone(450, 'sine', 0.1, 0.05);
+            if (autoScrollActive) runAutoScroll();
+        });
+    }
+
+    if (cinematicAudio) {
+        cinematicAudio.addEventListener('click', () => {
+            ambientAudioActive = !ambientAudioActive;
+            updateAudioUI();
+            playTone(450, 'sine', 0.1, 0.05);
+            if (ambientAudioActive) {
+                startAmbientSynthesizer();
+            } else {
+                stopAmbientSynthesizer();
+            }
+        });
+    }
+
+    /* ==========================================================================
+       DYNAMIC AMBIENT PARTICLES/ORBS BACKGROUND CANVAS
+       ========================================================================== */
+    const ambientCanvas = document.getElementById('ambient-canvas');
+    if (ambientCanvas) {
+        const ctx = ambientCanvas.getContext('2d');
+        let width = ambientCanvas.width = window.innerWidth;
+        let height = ambientCanvas.height = window.innerHeight;
+        
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                width = ambientCanvas.width = window.innerWidth;
+                height = ambientCanvas.height = window.innerHeight;
+            }, 200);
+        });
+
+        const orbs = [];
+        const numOrbs = 5;
+        
+        for (let i = 0; i < numOrbs; i++) {
+            orbs.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4,
+                radius: Math.random() * 200 + 150
+            });
+        }
+
+        function drawAmbientBackground() {
+            ctx.clearRect(0, 0, width, height);
+            
+            let colorStr = 'rgba(212, 175, 55, 0.04)'; 
+            if (document.body.classList.contains('light-theme')) {
+                colorStr = 'rgba(170, 124, 17, 0.03)'; 
+            } else if (document.body.classList.contains('terminal-theme')) {
+                colorStr = 'rgba(51, 255, 51, 0.03)'; 
+            }
+
+            orbs.forEach(orb => {
+                orb.x += orb.vx;
+                orb.y += orb.vy;
+
+                if (orb.x < -orb.radius) orb.x = width + orb.radius;
+                if (orb.x > width + orb.radius) orb.x = -orb.radius;
+                if (orb.y < -orb.radius) orb.y = height + orb.radius;
+                if (orb.y > height + orb.radius) orb.y = -orb.radius;
+
+                const grad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.radius);
+                grad.addColorStop(0, colorStr);
+                grad.addColorStop(1, 'transparent');
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(orb.x, orb.y, orb.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            requestAnimationFrame(drawAmbientBackground);
+        }
+        
+        drawAmbientBackground();
+    }
+
+    /* ==========================================================================
+       POLICIES SLIDE-OUT DRAWER CONTROLLER
+       ========================================================================== */
+    const policiesDrawer = document.getElementById('policies-drawer');
+    const policiesOverlay = document.getElementById('policies-drawer-overlay');
+    const policiesClose = document.getElementById('policies-drawer-close');
+    const menuPoliciesBtn = document.getElementById('menu-policies-btn');
+    const footerPolicyLink = document.querySelector('.footer-policy-link');
+    const checkoutNoticeBox = document.querySelector('.checkout-notice-box');
+
+    function openPoliciesDrawer(e) {
+        if (e) e.preventDefault();
+        
+        if (siteNav && siteNav.classList.contains('nav-open')) {
+            siteNav.classList.remove('nav-open');
+            if (navHamburger) {
+                navHamburger.classList.remove('open');
+                navHamburger.setAttribute('aria-expanded', 'false');
+            }
+            document.body.style.overflow = '';
+        }
+
+        if (policiesDrawer && policiesOverlay) {
+            policiesDrawer.classList.add('active');
+            policiesOverlay.classList.add('active');
+            playTone(550, 'sine', 0.1, 0.05);
+        }
+    }
+
+    function closePoliciesDrawer() {
+        if (policiesDrawer && policiesOverlay) {
+            policiesDrawer.classList.remove('active');
+            policiesOverlay.classList.remove('active');
+            playTone(400, 'sine', 0.1, 0.05);
+        }
+    }
+
+    if (menuPoliciesBtn) {
+        menuPoliciesBtn.addEventListener('click', openPoliciesDrawer);
+    }
+    if (footerPolicyLink) {
+        footerPolicyLink.addEventListener('click', openPoliciesDrawer);
+    }
+    
+    if (checkoutNoticeBox) {
+        checkoutNoticeBox.querySelectorAll('a').forEach(link => {
+            if (link.getAttribute('href').startsWith('policies.html')) {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openPoliciesDrawer();
+                    
+                    const hashIdx = link.getAttribute('href').indexOf('#');
+                    if (hashIdx !== -1) {
+                        const targetHash = link.getAttribute('href').substring(hashIdx);
+                        const targetSection = document.getElementById('drawer-' + targetHash.substring(1));
+                        if (targetSection) {
+                            setTimeout(() => {
+                                targetSection.scrollIntoView({ behavior: 'smooth' });
+                            }, 500);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    if (policiesClose) {
+        policiesClose.addEventListener('click', closePoliciesDrawer);
+    }
+    if (policiesOverlay) {
+        policiesOverlay.addEventListener('click', closePoliciesDrawer);
+    }
+
+    const drawerNavLinks = document.querySelectorAll('.policies-drawer-nav-link');
+    const drawerSections = document.querySelectorAll('.policies-drawer-section');
+    const drawerContentContainer = document.querySelector('.policies-drawer-content');
+
+    drawerNavLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = link.getAttribute('href');
+            const targetSection = document.querySelector(targetId);
+            
+            if (targetSection) {
+                targetSection.scrollIntoView({ behavior: 'smooth' });
+                
+                drawerNavLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+            }
+        });
+    });
+
+    if (drawerContentContainer) {
+        drawerContentContainer.addEventListener('scroll', () => {
+            let activeId = '';
+            drawerSections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (drawerContentContainer.scrollTop >= (sectionTop - 120)) {
+                    activeId = '#' + section.getAttribute('id');
+                }
+            });
+
+            drawerNavLinks.forEach(link => {
+                link.classList.toggle('active', link.getAttribute('href') === activeId);
+            });
         });
     }
 
