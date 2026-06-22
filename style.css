@@ -1253,6 +1253,7 @@ body.boot-completed .fade-in-up {
     }
 
     .plans-grid {
+        grid-template-columns: repeat(2, 1fr);
         gap: 18px;
     }
 
@@ -1315,7 +1316,7 @@ body.boot-completed .fade-in-up {
     }
 
     .plans-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 16px;
     }
 
@@ -2695,20 +2696,66 @@ body.terminal-theme .seq-pad.active.playing {
 /* ==========================================================================
    PRICING PLANS SECTION
    ========================================================================== */
+.plans-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 50px;
+    flex-wrap: wrap;
+}
+
+.plans-tab-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 12px 24px;
+    border-radius: 4px;
+    cursor: none;
+    transition: var(--transition-fast);
+    letter-spacing: 0.05em;
+}
+
+.plans-tab-btn:hover, .plans-tab-btn.active {
+    color: var(--text-primary);
+    border-color: var(--accent);
+    background-color: var(--accent-glow);
+    box-shadow: 0 4px 20px var(--accent-glow);
+}
+
 .plans-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 30px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
 }
 
 .plan-card {
     border: 1px solid var(--border-color);
     background-color: rgba(20, 20, 23, 0.2);
     border-radius: 4px;
-    padding: 40px;
+    padding: 30px;
     display: flex;
     flex-direction: column;
     transition: var(--transition-smooth);
+    animation: cardFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.plan-card.hidden {
+    display: none !important;
+}
+
+@keyframes cardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .plan-card:hover {

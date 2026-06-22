@@ -1246,6 +1246,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Plans Category Tab Toggling
+    const plansTabBtns = document.querySelectorAll('.plans-tab-btn');
+    const planCards = document.querySelectorAll('.plan-card');
+
+    plansTabBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const category = btn.getAttribute('data-category');
+
+            // Set active class on buttons
+            plansTabBtns.forEach(b => b.classList.toggle('active', b === btn));
+
+            // Hide/Show plan cards with reflow for animations
+            planCards.forEach(card => {
+                if (card.getAttribute('data-category') === category) {
+                    card.classList.remove('hidden');
+                    // Reset animation
+                    card.style.animation = 'none';
+                    card.offsetHeight; // force reflow
+                    card.style.animation = '';
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            playTone(550, 'triangle', 0.05, 0.08);
+        });
+    });
+
     if (closeCheckoutBtn && checkoutModal) {
         closeCheckoutBtn.addEventListener('click', () => {
             checkoutModal.classList.remove('active');
