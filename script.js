@@ -14,12 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
        ========================================================================== */
     // Paste your Firebase Config here. If left empty, the application will fallback to LocalStorage.
     const FIREBASE_CONFIG = {
-        apiKey: "",
-        authDomain: "",
-        projectId: "",
-        storageBucket: "",
-        messagingSenderId: "",
-        appId: ""
+        apiKey: "AIzaSyCkTEyPv2X906jBzR_WKHUSZU6HL1m0Kn8",
+        authDomain: "getclowdy.firebaseapp.com",
+        projectId: "getclowdy",
+        storageBucket: "getclowdy.firebasestorage.app",
+        messagingSenderId: "285613770049",
+        appId: "1:285613770049:web:f37154f2c37799372c0dc0",
+        measurementId: "G-FGGP0LT1C0"
     };
 
     let db = null;
