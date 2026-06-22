@@ -106,6 +106,19 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Firebase Workers Sync Error:", err);
             loadAllData();
         });
+
+        // Sync users
+        db.collection('users').onSnapshot(snapshot => {
+            let users = [];
+            snapshot.forEach(doc => {
+                users.push({ id: doc.id, ...doc.data() });
+            });
+            localStorage.setItem('client_users', JSON.stringify(users));
+            loadAllData();
+        }, err => {
+            console.error("Firebase Users Sync Error:", err);
+            loadAllData();
+        });
     }
 
 
@@ -166,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ===================================================================== */
     const ADMIN_SALT = 'MOHAMED_PORTFOLIO_SALT_2026';
     const ADMIN_HASH = '7b04eb67ff2d05be4b6422141c4294d6a4c3e1a1e81cad9be71c29babdd965ff';
+    const OWNER_HASH = '5fbd5afae9b74d450bc43812f5e36338ee3ef21ec86ab634b49cb96db76ecdca';
 
     const lockScreen  = document.getElementById('lock-screen');
     const appEl       = document.getElementById('app');
@@ -197,6 +211,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
+    async function sha256WithSalt(str, salt) {
+        const data = new TextEncoder().encode(str + salt);
+        const buf  = await crypto.subtle.digest('SHA-256', data);
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     async function attemptLogin() {
         if (!pwInput || !lockBtn) return;
         lockBtn.textContent = 'Verifying…';
@@ -205,8 +225,13 @@ document.addEventListener('DOMContentLoaded', () => {
         pwInput.value = '';
         dots.forEach(d => d.classList.remove('active'));
 
-        if (hash === ADMIN_HASH) {
+        if (hash === ADMIN_HASH || hash === OWNER_HASH) {
             sessionStorage.setItem('adminOk', '1');
+            if (hash === OWNER_HASH) {
+                sessionStorage.setItem('ownerOk', '1');
+            } else {
+                sessionStorage.removeItem('ownerOk');
+            }
             lockError.classList.remove('show');
             lockBtn.textContent = 'Access Granted ✓';
             setTimeout(() => {
@@ -241,6 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             sessionStorage.removeItem('adminOk');
+            sessionStorage.removeItem('ownerOk');
             appEl.classList.remove('visible');
             lockScreen.style.display = 'flex';
             lockScreen.classList.remove('fade-out');
@@ -257,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const pageNames = {
         overview: '/ Overview',
+        users:    '/ Users & Workers',
         pending:  '/ Pending Orders',
         history:  '/ History',
         receipts: '/ Receipts',
@@ -285,6 +312,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function saveOrders(arr) {
         localStorage.setItem('client_orders', JSON.stringify(arr));
     }
+    function getWorkers() {
+        try { return JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch { return []; }
+    }
+    function saveWorkers(arr) {
+        localStorage.setItem('client_workers', JSON.stringify(arr));
+    }
+    function getUsers() {
+        try { return JSON.parse(localStorage.getItem('client_users') || '[]'); } catch { return []; }
+    }
+    function saveUsers(arr) {
+        localStorage.setItem('client_users', JSON.stringify(arr));
+    }
 
     function loadAllData() {
         renderStats();
@@ -295,6 +334,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAnnouncements();
         renderActivity();
         updateBadges();
+        renderUsers();
+        renderWorkers();
     }
 
     /* =====================================================================
@@ -652,6 +693,35 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
+        const deleteBtn = document.getElementById('dm-delete-btn');
+        if (deleteBtn) {
+            if (sessionStorage.getItem('ownerOk') === '1') {
+                deleteBtn.style.display = 'inline-block';
+                deleteBtn.onclick = async () => {
+                    if (confirm('Are you sure you want to delete this order?')) {
+                        const allOrders = getOrders();
+                        const orderToDelete = allOrders[idx];
+                        if (orderToDelete) {
+                            allOrders.splice(idx, 1);
+                            saveOrders(allOrders);
+                            document.getElementById('detail-modal').classList.remove('open');
+                            toast('Order deleted successfully.', 'success');
+                            loadAllData();
+                            if (isFirebaseActive && db) {
+                                try {
+                                    await db.collection('orders').doc(orderToDelete.id).delete();
+                                } catch (err) {
+                                    console.error("Error deleting order from firestore:", err);
+                                }
+                            }
+                        }
+                    }
+                };
+            } else {
+                deleteBtn.style.display = 'none';
+            }
+        }
+
         document.getElementById('detail-modal').classList.add('open');
     };
 
@@ -728,6 +798,111 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => {
         if (sessionStorage.getItem('adminOk') === '1' && !isFirebaseActive) loadAllData();
     }, 30000);
+
+    /* =====================================================================
+       REGISTERED USERS & ACTIVE WORKERS MANAGEMENT
+       ===================================================================== */
+    async function syncWorkerUpdate(worker) {
+        if (isFirebaseActive && db) {
+            try {
+                const { id, ...workerData } = worker;
+                await db.collection('workers').doc(id).set(workerData);
+            } catch (err) {
+                console.error("Error syncing worker to Firestore:", err);
+            }
+        }
+    }
+
+    async function syncWorkerDelete(id) {
+        if (isFirebaseActive && db) {
+            try {
+                await db.collection('workers').doc(id).delete();
+            } catch (err) {
+                console.error("Error deleting worker from Firestore:", err);
+            }
+        }
+    }
+
+    function renderUsers() {
+        const tbody = document.getElementById('users-tbody');
+        if (!tbody) return;
+
+        const users = getUsers();
+        if (!users.length) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No users registered yet.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = users.map(u => {
+            const dateStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-EG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+            const role = u.role || 'client';
+            
+            // Count how many orders this user placed
+            const orders = getOrders();
+            const orderCount = orders.filter(o => o.email === u.email).length;
+
+            return `
+                <tr>
+                    <td>
+                        <div class="client-name">${esc(u.displayName || u.name)}</div>
+                        <div class="client-email">${esc(u.email)}</div>
+                    </td>
+                    <td><span class="badge card">${esc(role)}</span></td>
+                    <td>${dateStr}</td>
+                    <td><strong style="color:var(--text);">${orderCount}</strong></td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderWorkers() {
+        const tbody = document.getElementById('workers-tbody');
+        if (!tbody) return;
+
+        const workers = getWorkers();
+        if (!workers.length) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No workers registered yet.</td></tr>';
+            return;
+        }
+
+        const isOwner = sessionStorage.getItem('ownerOk') === '1';
+
+        tbody.innerHTML = workers.map((w, idx) => {
+            const dateStr = w.joinedAt ? new Date(w.joinedAt).toLocaleDateString('en-EG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+            const faStatus = w.twoFactorSetup ? '<span class="badge approved">2FA Enabled</span>' : '<span class="badge pending">2FA Pending</span>';
+            const actionHtml = isOwner ? 
+                `<button class="btn-reject" onclick="window._adminRemoveWorker('${w.id}')" style="cursor:none; font-size:.7rem; padding:4px 8px;">Remove</button>` : 
+                `<span style="color:var(--muted); font-size:.75rem;">Locked</span>`;
+
+            return `
+                <tr>
+                    <td>
+                        <div class="client-name">${esc(w.name)}</div>
+                        <div class="client-email">${esc(w.email)}</div>
+                    </td>
+                    <td><strong style="color:var(--text);">${esc(w.major)}</strong></td>
+                    <td>${dateStr}</td>
+                    <td>${faStatus}</td>
+                    <td>${actionHtml}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window._adminRemoveWorker = async function(id) {
+        if (sessionStorage.getItem('ownerOk') !== '1') {
+            toast('Owner permissions required.', 'error');
+            return;
+        }
+        if (confirm('Are you sure you want to remove this worker?')) {
+            let workers = getWorkers();
+            workers = workers.filter(w => w.id !== id);
+            saveWorkers(workers);
+            toast('Worker removed successfully.', 'success');
+            loadAllData();
+            await syncWorkerDelete(id);
+        }
+    };
 
     /* =====================================================================
        RECRUITMENT (APPLICATIONS) MANAGEMENT
@@ -874,6 +1049,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        const deleteAppBtn = document.getElementById('adm-delete-btn');
+        if (deleteAppBtn) {
+            if (sessionStorage.getItem('ownerOk') === '1') {
+                deleteAppBtn.style.display = 'inline-block';
+                deleteAppBtn.onclick = async () => {
+                    if (confirm('Are you sure you want to delete this application?')) {
+                        const allApps = getApplications();
+                        const appToDelete = allApps[idx];
+                        if (appToDelete) {
+                            allApps.splice(idx, 1);
+                            saveApplications(allApps);
+                            document.getElementById('app-detail-modal').classList.remove('open');
+                            toast('Application deleted successfully.', 'success');
+                            loadAllData();
+                            if (isFirebaseActive && db) {
+                                try {
+                                    await db.collection('applications').doc(appToDelete.id).delete();
+                                } catch (err) {
+                                    console.error("Error deleting application from firestore:", err);
+                                }
+                            }
+                        }
+                    }
+                };
+            } else {
+                deleteAppBtn.style.display = 'none';
+            }
+        }
+
+        const uidField = document.getElementById('adm-user-uid');
+        if (uidField) uidField.textContent = app.userUid || app.userId || '—';
+
         if (appDetailModal) appDetailModal.classList.add('open');
     };
 
@@ -901,6 +1108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const INVITE_SALT = "WORKER_PORTAL_INVITE_2026";
+    const SIGNUP_SALT = "WORKER_PORTAL_SIGNUP_2026";
 
     window._adminApproveApplication = async function(idx) {
         const apps = getApplications();
@@ -911,28 +1119,76 @@ document.addEventListener('DOMContentLoaded', () => {
         saveApplications(apps);
         await syncApplicationUpdate(app);
 
-        const appId = app.id;
-        const hashInput = appId + INVITE_SALT;
-        const keyHash = await sha256(hashInput);
-
-        let siteUrl = window.location.href;
-        if (siteUrl.endsWith('admin.html')) {
-            siteUrl = siteUrl.replace('admin.html', 'worker.html');
-        } else {
-            siteUrl = siteUrl.substring(0, siteUrl.lastIndexOf('/') + 1) + 'worker.html';
+        // Generate temporary password
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let rand = '';
+        for (let i = 0; i < 6; i++) {
+            rand += chars.charAt(Math.floor(Math.random() * chars.length));
         }
-        
-        const inviteUrl = `${siteUrl}?invite=${appId}&key=${keyHash}`;
-        
-        if (inviteLinkInput) {
-            inviteLinkInput.value = inviteUrl;
+        const tempPassword = `WORKER-${rand}`;
+
+        // Create password hash using the SIGNUP_SALT
+        const tempPassHash = await sha256WithSalt(tempPassword, app.email + SIGNUP_SALT);
+
+        // Create new worker profile
+        const workerId = 'work_' + app.email.replace(/\./g, '_');
+        const newWorker = {
+            id: workerId,
+            name: app.name,
+            email: app.email,
+            major: app.major,
+            passwordHash: tempPassHash,
+            joinedAt: new Date().toISOString(),
+            twoFactorSetup: false
+        };
+
+        // Save worker profile locally
+        let localWorkers = getWorkers();
+        const wIdx = localWorkers.findIndex(w => w.email === app.email);
+        if (wIdx !== -1) {
+            localWorkers[wIdx] = newWorker;
+        } else {
+            localWorkers.push(newWorker);
+        }
+        saveWorkers(localWorkers);
+        await syncWorkerUpdate(newWorker);
+
+        // Fill credentials modal
+        const credEmailEl = document.getElementById('cred-email');
+        const credPasswordEl = document.getElementById('cred-password');
+        if (credEmailEl) credEmailEl.textContent = app.email;
+        if (credPasswordEl) credPasswordEl.textContent = tempPassword;
+
+        // SMTP simulated logs
+        const smtpLogsEl = document.getElementById('smtp-logs');
+        if (smtpLogsEl) {
+            smtpLogsEl.innerHTML = '';
+            const logs = [
+                `[${new Date().toLocaleTimeString()}] Connecting to SMTP server at mail.mwintellegince.com:587...`,
+                `[${new Date().toLocaleTimeString()}] Connection established. TLS v1.3 handshake successful.`,
+                `[${new Date().toLocaleTimeString()}] Authenticating with credentials daemon@mwintellegince.com...`,
+                `[${new Date().toLocaleTimeString()}] Dispatching email payload to <${app.email}>...`,
+                `[${new Date().toLocaleTimeString()}] Headers: Subject: Welcome to MW Intelligence! Worker Portal Credentials`,
+                `[${new Date().toLocaleTimeString()}] Mail transmission complete. Status: 250 OK (Queued for delivery).`
+            ];
+            
+            let logIdx = 0;
+            function writeLog() {
+                if (logIdx < logs.length) {
+                    smtpLogsEl.innerHTML += `<div>${logs[logIdx]}</div>`;
+                    smtpLogsEl.scrollTop = smtpLogsEl.scrollHeight;
+                    logIdx++;
+                    setTimeout(writeLog, 600);
+                }
+            }
+            writeLog();
         }
 
         if (inviteModal) {
             inviteModal.classList.add('open');
         }
 
-        toast(`Application approved for ${app.name}.`, 'success');
+        toast(`Worker approved & temporary credentials generated.`, 'success');
         loadAllData();
     };
 

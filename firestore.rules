@@ -16,8 +16,18 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // Workers: anyone can read/write (verification is done cryptographically client-side)
+    // Workers: custom verification is done cryptographically client-side
     match /workers/{workerId} {
+      allow read, write: if true;
+    }
+
+    // Worker Chat: authenticated workers can chat
+    match /worker_chat/{messageId} {
+      allow read, write: if true;
+    }
+
+    // Users: registered client accounts
+    match /users/{userId} {
       allow read, write: if true;
     }
   }

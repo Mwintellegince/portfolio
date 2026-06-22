@@ -707,6 +707,11 @@
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                 Overview
             </button>
+            <button class="nav-item" data-page="users">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                Users
+                <span class="nav-badge" id="nav-badge-users">0</span>
+            </button>
 
             <div class="nav-section-label">Orders</div>
             <button class="nav-item" data-page="pending">
@@ -976,6 +981,54 @@
             </div>
         </div>
 
+        <!-- ── REGISTERED USERS PAGE ── -->
+        <div class="page" id="page-users">
+            <div class="page-header">
+                <div class="page-eyebrow">Database</div>
+                <h1 class="page-title">Registered Users</h1>
+                <p class="page-sub">View list of users signed up on the portfolio client portal.</p>
+            </div>
+
+            <div class="section-card">
+                <div class="section-head">
+                    <h2>All Users</h2>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User Details</th>
+                            <th>Role</th>
+                            <th>Registered Date</th>
+                            <th>Orders Placed</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <tr class="empty-row"><td colspan="4">No users registered yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section-card" style="margin-top: 30px;">
+                <div class="section-head">
+                    <h2>Active Workers</h2>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Worker Details</th>
+                            <th>Major / Role</th>
+                            <th>Joined Date</th>
+                            <th>2FA Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="workers-tbody">
+                        <tr class="empty-row"><td colspan="5">No workers registered yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div><!-- /main-content -->
 </div><!-- /app -->
 
@@ -1054,6 +1107,7 @@
 
         <div class="modal-actions">
             <button class="modal-btn ghost" id="dm-close">Close</button>
+            <button class="modal-btn primary" id="dm-delete-btn" style="background:var(--red); border-color:var(--red); display:none; cursor:none;">Delete Order</button>
         </div>
     </div>
 </div>
@@ -1071,6 +1125,10 @@
         <div class="modal-info-row">
             <span class="mirl">Email</span>
             <span class="mirr" id="adm-email">—</span>
+        </div>
+        <div class="modal-info-row">
+            <span class="mirl">User UID</span>
+            <span class="mirr" id="adm-user-uid" style="font-family: monospace; font-size: 0.72rem;">—</span>
         </div>
         <div class="modal-info-row">
             <span class="mirl">Major / Role</span>
@@ -1096,6 +1154,7 @@
         <div class="modal-actions" style="margin-top: 18px;">
             <a id="adm-cv-btn" href="#" download="" class="modal-btn primary" style="text-align: center; text-decoration: none; display: inline-block; cursor: none;">Download CV</a>
             <button class="modal-btn ghost" id="adm-close" style="cursor: none;">Close</button>
+            <button class="modal-btn primary" id="adm-delete-btn" style="background:var(--red); border-color:var(--red); display:none; cursor:none;">Delete Application</button>
         </div>
     </div>
 </div>
@@ -1115,22 +1174,32 @@
     </div>
 </div>
 
-<!-- ========== INVITE GENERATOR MODAL ========== -->
+<!-- ========== simulated credentials email popup ========== -->
 <div class="modal-overlay" id="invite-modal">
     <div class="modal-box" style="max-width: 500px;">
         <div class="modal-title">Worker Approved!</div>
-        <div class="modal-sub">A secure worker invite link has been generated. Copy this link and send it directly to the accepted candidate.</div>
+        <div class="modal-sub">An automated email containing credentials has been forwarded to the candidate.</div>
         
-        <div style="margin: 20px 0;">
-            <label style="font-size: .78rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 6px;">Secure Registration Link</label>
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="invite-link-input" readonly style="flex: 1; padding: 10px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font-mono); font-size: .78rem; outline: none;" onclick="this.select()">
-                <button class="modal-btn primary" id="copy-invite-btn" style="flex: 0 0 auto; width: 80px; padding: 0; font-size: .72rem; cursor: none;">Copy</button>
+        <div style="margin: 20px 0; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 15px; border-radius: 6px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;">
+                <span style="color: var(--muted);">Login Email:</span>
+                <strong id="cred-email" style="color: var(--text);">—</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                <span style="color: var(--muted);">Temporary Password:</span>
+                <strong id="cred-password" style="color: var(--gold); font-family: var(--font-mono);">—</strong>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="font-size: .7rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px; text-transform: uppercase;">Simulated SMTP Server Logs</label>
+            <div id="smtp-logs" style="background: #020803; border: 1px solid rgba(51,255,51,0.15); font-family: monospace; font-size: 0.72rem; color: #33ff33; padding: 10px 12px; border-radius: 6px; min-height: 80px; max-height: 120px; overflow-y: auto; line-height: 1.4;">
+                <!-- Logs will be written dynamically -->
             </div>
         </div>
 
         <div class="modal-warn">
-            <strong>Security Warning:</strong> This link contains a cryptographic key tied to the candidate's application. It allows them to set up their password. Do not share it publicly.
+            <strong>Security Warning:</strong> The candidate will be prompted to set up their custom permanent password and 2FA PIN code during their first sign-in.
         </div>
 
         <div class="modal-actions">

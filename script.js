@@ -35,14 +35,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+
+            
+    let currentUser = null;
+    let userOrdersListener = null;
+
+    async function sha256(str) {
+        const data = new TextEncoder().encode(str + "USER_AUTH_SALT_2026");
+        const buf  = await crypto.subtle.digest('SHA-256', data);
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     async function initFirebase() {
         if (!FIREBASE_CONFIG.apiKey) {
             console.log("Firebase config not found. Falling back to LocalStorage.");
-            initLocalOrderTracker();
+            setupClientAuthObserver();
             return false;
         }
         try {
             await loadScript("https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js");
+            await loadScript("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js");
             await loadScript("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js");
             
             if (!firebase.apps.length) {
@@ -50,119 +62,557 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             db = firebase.firestore();
             isFirebaseActive = true;
-            console.log("Firebase Firestore initialized on client side.");
+            console.log("Firebase Firestore and Auth initialized on client side.");
             
-            setupClientOrderStatusListener();
+            setupClientAuthObserver();
             return true;
         } catch (e) {
             console.error("Failed to initialize Firebase on client:", e);
-            initLocalOrderTracker();
+            setupClientAuthObserver();
             return false;
         }
     }
 
-    function initLocalOrderTracker() {
-        const lastOrderId = localStorage.getItem('last_order_id');
-        if (!lastOrderId) return;
-        
-        const storedOrders = localStorage.getItem('client_orders');
-        if (storedOrders) {
-            const orders = JSON.parse(storedOrders);
-            const order = orders.find(o => o.id === lastOrderId);
-            if (order) {
-                updateOrderStatusUI(order.status, order.planName, lastOrderId, order.timestamp);
-            }
+    /* ==========================================================================
+       USER AUTHENTICATION & PROFILE DASHBOARD
+       ========================================================================== */
+    const authModal = document.getElementById('auth-modal');
+    const profileModal = document.getElementById('profile-modal');
+    const closeAuthBtn = document.getElementById('close-auth');
+    const closeProfileBtn = document.getElementById('close-profile');
+    const menuAuthBtn = document.getElementById('menu-auth-btn');
+
+    const tabSignIn = document.getElementById('tab-signin');
+    const tabSignUp = document.getElementById('tab-signup');
+    const signinForm = document.getElementById('signin-form');
+    const signupForm = document.getElementById('signup-form');
+    const googleAuthBtn = document.getElementById('google-auth-btn');
+    const googleBtnText = document.getElementById('google-btn-text');
+
+    const profileDisplayName = document.getElementById('profile-display-name');
+    const profileEmail = document.getElementById('profile-email');
+    const profileRole = document.getElementById('profile-role');
+    const profileWorkerBtn = document.getElementById('profile-worker-btn');
+    const profileLogoutBtn = document.getElementById('profile-logout-btn');
+    const profileOrdersContainer = document.getElementById('profile-orders-container');
+
+    // Tab Switching
+    if (tabSignIn && tabSignUp && signinForm && signupForm) {
+        tabSignIn.addEventListener('click', () => {
+            tabSignIn.classList.add('active');
+            tabSignUp.classList.remove('active');
+            signinForm.classList.remove('hidden');
+            signupForm.classList.add('hidden');
+            document.getElementById('auth-modal-title').textContent = "Sign In";
+        });
+        tabSignUp.addEventListener('click', () => {
+            tabSignUp.classList.add('active');
+            tabSignIn.classList.remove('active');
+            signupForm.classList.remove('hidden');
+            signinForm.classList.add('hidden');
+            document.getElementById('auth-modal-title').textContent = "Sign Up";
+        });
+    }
+
+    function openAuthModal() {
+        if (authModal) {
+            authModal.classList.add('active');
+            playTone(550, 'sine', 0.1, 0.05);
         }
     }
 
-    function setupClientOrderStatusListener() {
-        if (!isFirebaseActive || !db) return;
-        const lastOrderId = localStorage.getItem('last_order_id');
-        if (!lastOrderId) return;
-        
-        db.collection('orders').doc(lastOrderId).onSnapshot((doc) => {
-            if (doc.exists) {
-                const orderData = doc.data();
-                updateOrderStatusUI(orderData.status, orderData.planName, lastOrderId, orderData.timestamp);
+    function closeAuthModal() {
+        if (authModal) {
+            authModal.classList.remove('active');
+            playTone(400, 'sine', 0.1, 0.05);
+        }
+    }
+
+    function openProfileModal() {
+        if (profileModal) {
+            profileModal.classList.add('active');
+            renderUserProfileAndOrders();
+            playTone(550, 'sine', 0.1, 0.05);
+        }
+    }
+
+    function closeProfileModal() {
+        if (profileModal) {
+            profileModal.classList.remove('active');
+            playTone(400, 'sine', 0.1, 0.05);
+        }
+    }
+
+    if (menuAuthBtn) {
+        menuAuthBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (currentUser) {
+                openProfileModal();
             } else {
-                initLocalOrderTracker();
-            }
-        }, (error) => {
-            console.error("Error listening to order status in Firestore:", error);
-            initLocalOrderTracker();
-        });
-    }
-
-    function updateOrderStatusUI(status, planName, orderId, timestamp) {
-        const trackerCapsule = document.getElementById('order-tracker-capsule');
-        const trackIdEl = document.getElementById('track-id');
-        const trackPlanEl = document.getElementById('track-plan');
-        const trackStatusEl = document.getElementById('track-status');
-        const trackTimeEl = document.getElementById('track-time');
-        
-        const stepSubmitted = document.getElementById('step-submitted');
-        const stepProcessing = document.getElementById('step-processing');
-        const stepProcessingDesc = document.getElementById('step-processing-desc');
-        const stepProcessingTitle = stepProcessing ? stepProcessing.querySelector('.step-title') : null;
-
-        if (trackerCapsule) trackerCapsule.classList.remove('hidden');
-        if (trackIdEl) trackIdEl.textContent = orderId;
-        if (trackPlanEl) trackPlanEl.textContent = planName;
-        
-        if (trackStatusEl) {
-            trackStatusEl.textContent = status;
-            trackStatusEl.className = 'tracker-value badge ' + status;
-        }
-        
-        if (trackTimeEl && timestamp) {
-            const d = new Date(timestamp);
-            trackTimeEl.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString();
-        }
-
-        if (stepSubmitted) {
-            stepSubmitted.className = 'timeline-step completed';
-        }
-        
-        if (stepProcessing) {
-            if (status === 'pending') {
-                stepProcessing.className = 'timeline-step active';
-                if (stepProcessingTitle) stepProcessingTitle.textContent = "Awaiting Verification";
-                if (stepProcessingDesc) stepProcessingDesc.textContent = "Payment is under manual review by the admin.";
-            } else if (status === 'approved') {
-                stepProcessing.className = 'timeline-step completed';
-                if (stepProcessingTitle) stepProcessingTitle.textContent = "Approved & Initiated";
-                if (stepProcessingDesc) stepProcessingDesc.textContent = "Mohamed approved your order and will contact you via email.";
-            } else if (status === 'rejected') {
-                stepProcessing.className = 'timeline-step completed';
-                if (stepProcessingTitle) stepProcessingTitle.textContent = "Refunded & Cancelled";
-                if (stepProcessingDesc) stepProcessingDesc.textContent = "Request cancelled. Payment refunded back to your source wallet/card.";
-            }
-        }
-    }
-
-    // Bind Order Tracker modal events
-    const trackerCapsule = document.getElementById('order-tracker-capsule');
-    const trackerModal = document.getElementById('tracker-modal');
-    const closeTrackerBtn = document.getElementById('close-tracker');
-
-    if (trackerCapsule && trackerModal) {
-        trackerCapsule.addEventListener('click', () => {
-            trackerModal.classList.add('active');
-            if (typeof playTone === 'function') {
-                playTone(450, 'sine', 0.15, 0.1);
+                openAuthModal();
             }
         });
     }
-    if (closeTrackerBtn && trackerModal) {
-        closeTrackerBtn.addEventListener('click', () => {
-            trackerModal.classList.remove('active');
-        });
-        trackerModal.addEventListener('click', (e) => {
-            if (e.target === trackerModal) {
-                trackerModal.classList.remove('active');
+    if (closeAuthBtn) closeAuthBtn.addEventListener('click', closeAuthModal);
+    if (closeProfileBtn) closeProfileBtn.addEventListener('click', closeProfileModal);
+
+    if (authModal) {
+        authModal.addEventListener('click', (e) => { if (e.target === authModal) closeAuthModal(); });
+    }
+    if (profileModal) {
+        profileModal.addEventListener('click', (e) => { if (e.target === profileModal) closeProfileModal(); });
+    }
+
+    // Dynamic prefill lock helper
+    function setFormPrefills(user) {
+        const clientNameField = document.getElementById('client-name');
+        const clientEmailField = document.getElementById('client-email');
+        const applyNameField = document.getElementById('apply-name');
+        const applyEmailField = document.getElementById('apply-email');
+
+        if (user) {
+            if (clientNameField) { clientNameField.value = user.displayName; clientNameField.readOnly = true; }
+            if (clientEmailField) { clientEmailField.value = user.email; clientEmailField.readOnly = true; }
+            if (applyNameField) { applyNameField.value = user.displayName; applyNameField.readOnly = true; }
+            if (applyEmailField) { applyEmailField.value = user.email; applyEmailField.readOnly = true; }
+        } else {
+            if (clientNameField) { clientNameField.value = ""; clientNameField.readOnly = false; }
+            if (clientEmailField) { clientEmailField.value = ""; clientEmailField.readOnly = false; }
+            if (applyNameField) { applyNameField.value = ""; applyNameField.readOnly = false; }
+            if (applyEmailField) { applyEmailField.value = ""; applyEmailField.readOnly = false; }
+        }
+    }
+
+    // Set auth state
+    function setAuthUserState(user) {
+        currentUser = user;
+        if (menuAuthBtn) {
+            menuAuthBtn.innerHTML = user ? `<span class="nav-num">08</span> Profile` : `<span class="nav-num">08</span> Sign In`;
+        }
+        setFormPrefills(user);
+        if (!user && profileModal) {
+            profileModal.classList.remove('active');
+        }
+    }
+
+    // Initialize Auth Observer
+    function setupClientAuthObserver() {
+        if (isFirebaseActive && firebase.auth) {
+            firebase.auth().onAuthStateChanged(async (firebaseUser) => {
+                if (firebaseUser) {
+                    // Check if document exists in Firestore
+                    try {
+                        const userDoc = await db.collection('users').doc(firebaseUser.uid).get();
+                        if (userDoc.exists) {
+                            const userData = userDoc.data();
+                            setAuthUserState({
+                                uid: firebaseUser.uid,
+                                displayName: userData.displayName,
+                                email: userData.email,
+                                role: userData.role || 'client'
+                            });
+                        } else {
+                            // Account not in Firestore database. Prompt user to sign up
+                            await firebase.auth().signOut();
+                            setAuthUserState(null);
+                            showNotification("Account does not exist. Please sign up first.", "error");
+                        }
+                    } catch (err) {
+                        console.error("Auth Firestore observer error:", err);
+                        setAuthUserState(null);
+                    }
+                } else {
+                    setAuthUserState(null);
+                }
+            });
+        } else {
+            // LocalStorage auth observer fallback
+            try {
+                const storedUser = localStorage.getItem('active_client_user');
+                if (storedUser) {
+                    setAuthUserState(JSON.parse(storedUser));
+                } else {
+                    setAuthUserState(null);
+                }
+            } catch {
+                setAuthUserState(null);
+            }
+        }
+    }
+
+    // Credentials Submit: Sign In
+    if (signinForm) {
+        signinForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('signin-email').value.trim();
+            const password = document.getElementById('signin-password').value;
+
+            if (isFirebaseActive) {
+                try {
+                    // Start authentication sign-in
+                    const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+                    const uid = userCredential.user.uid;
+                    // Double check Firestore doc existence
+                    const userDoc = await db.collection('users').doc(uid).get();
+                    if (!userDoc.exists) {
+                        await firebase.auth().signOut();
+                        showNotification("Account does not exist. Please sign up first.", "error");
+                        return;
+                    }
+                    showNotification("Logged in successfully!", "success");
+                    closeAuthModal();
+                } catch (err) {
+                    console.error("Firebase Sign In Error:", err);
+                    showNotification(err.message || "Invalid credentials.", "error");
+                }
+            } else {
+                // LocalStorage Fallback
+                let localUsers = [];
+                try { localUsers = JSON.parse(localStorage.getItem('client_users') || '[]'); } catch {}
+                const passHash = await sha256(password);
+                const user = localUsers.find(u => u.email === email && u.passwordHash === passHash);
+                if (user) {
+                    const loggedInUser = {
+                        uid: 'usr_' + Date.now(),
+                        displayName: user.displayName,
+                        email: user.email,
+                        role: user.role || 'client'
+                    };
+                    localStorage.setItem('active_client_user', JSON.stringify(loggedInUser));
+                    setAuthUserState(loggedInUser);
+                    showNotification("Logged in successfully!", "success");
+                    closeAuthModal();
+                } else {
+                    showNotification("Account does not exist or invalid credentials.", "error");
+                }
             }
         });
     }
+
+    // Credentials Submit: Sign Up
+    if (signupForm) {
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+
+            if (password.length < 6) {
+                showNotification("Password must be at least 6 characters.", "warn");
+                return;
+            }
+
+            if (isFirebaseActive) {
+                try {
+                    // Create account in Firebase Auth
+                    const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+                    const uid = userCredential.user.uid;
+                    const newUserData = {
+                        displayName: name,
+                        email: email,
+                        role: 'client',
+                        createdAt: new Date().toISOString()
+                    };
+                    // Write profile to Firestore
+                    await db.collection('users').doc(uid).set(newUserData);
+                    showNotification("Account created successfully! Logging in...", "success");
+                    closeAuthModal();
+                } catch (err) {
+                    console.error("Firebase Sign Up Error:", err);
+                    showNotification(err.message || "Registration failed.", "error");
+                }
+            } else {
+                // LocalStorage Fallback
+                let localUsers = [];
+                try { localUsers = JSON.parse(localStorage.getItem('client_users') || '[]'); } catch {}
+                if (localUsers.some(u => u.email === email)) {
+                    showNotification("Account already exists with this email.", "warn");
+                    return;
+                }
+                const passHash = await sha256(password);
+                localUsers.push({
+                    displayName: name,
+                    email: email,
+                    passwordHash: passHash,
+                    role: 'client',
+                    createdAt: new Date().toISOString()
+                });
+                localStorage.setItem('client_users', JSON.stringify(localUsers));
+
+                const loggedInUser = {
+                    uid: 'usr_' + Date.now(),
+                    displayName: name,
+                    email: email,
+                    role: 'client'
+                };
+                localStorage.setItem('active_client_user', JSON.stringify(loggedInUser));
+                setAuthUserState(loggedInUser);
+                showNotification("Account created successfully!", "success");
+                closeAuthModal();
+            }
+        });
+    }
+
+    // Google Sign In / Sign Up Handler
+    if (googleAuthBtn) {
+        googleAuthBtn.addEventListener('click', async () => {
+            if (!isFirebaseActive) {
+                showNotification("Google Authentication is only available in cloud deployment mode.", "warn");
+                return;
+            }
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const userCredential = await firebase.auth().signInWithPopup(provider);
+                const firebaseUser = userCredential.user;
+                const uid = firebaseUser.uid;
+
+                // Check if account exists
+                const userDoc = await db.collection('users').doc(uid).get();
+                if (userDoc.exists) {
+                    // Sign In Successful
+                    showNotification(`Welcome back, ${userDoc.data().displayName}!`, "success");
+                    closeAuthModal();
+                } else {
+                    // Check if it is a sign-up action or block
+                    // Wait, if they click Sign In and account is not there, we should block it!
+                    // Let's check which form tab is active. If tab-signin is active, block it!
+                    const isSignUpTab = tabSignUp.classList.contains('active');
+                    if (!isSignUpTab) {
+                        await firebase.auth().signOut();
+                        showNotification("Account does not exist. Please sign up first.", "error");
+                        return;
+                    }
+                    // Sign Up Flow - Create user doc
+                    const newUserData = {
+                        displayName: firebaseUser.displayName || email.split('@')[0],
+                        email: firebaseUser.email,
+                        role: 'client',
+                        createdAt: new Date().toISOString()
+                    };
+                    await db.collection('users').doc(uid).set(newUserData);
+                    showNotification("Google Account registered successfully!", "success");
+                    closeAuthModal();
+                }
+            } catch (err) {
+                console.error("Google Auth error:", err);
+                showNotification(err.message || "Google authentication failed.", "error");
+            }
+        });
+    }
+
+    // Sign Out
+    if (profileLogoutBtn) {
+        profileLogoutBtn.addEventListener('click', async () => {
+            if (isFirebaseActive) {
+                try {
+                    await firebase.auth().signOut();
+                    showNotification("Signed out successfully.", "info");
+                } catch (err) {
+                    console.error("Error signing out:", err);
+                }
+            } else {
+                localStorage.removeItem('active_client_user');
+                setAuthUserState(null);
+                showNotification("Signed out successfully.", "info");
+            }
+            closeProfileModal();
+        });
+    }
+
+    // Check if worker email has a profile to access worker.html
+    if (profileWorkerBtn) {
+        profileWorkerBtn.addEventListener('click', async () => {
+            if (!currentUser) return;
+            const email = currentUser.email;
+
+            // Check if worker exists in workers database
+            let isWorker = false;
+            let workerObj = null;
+
+            if (isFirebaseActive && db) {
+                try {
+                    const doc = await db.collection('workers').doc('work_' + email.replace(/\./g, '_')).get();
+                    if (doc.exists) {
+                        isWorker = true;
+                        workerObj = { id: doc.id, ...doc.data() };
+                    }
+                } catch (err) {
+                    console.error("Firestore worker search error:", err);
+                }
+            } else {
+                let localWorkers = [];
+                try { localWorkers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
+                const localW = localWorkers.find(w => w.email === email);
+                if (localW) {
+                    isWorker = true;
+                    workerObj = localW;
+                }
+            }
+
+            if (isWorker) {
+                // Auto authenticate in worker.html
+                sessionStorage.setItem('workerOk', '1');
+                sessionStorage.setItem('workerEmail', email);
+                localStorage.setItem('active_worker_profile', JSON.stringify(workerObj));
+                showNotification("Redirecting to worker dashboard...", "success");
+                setTimeout(() => {
+                    window.location.href = 'worker.html';
+                }, 1000);
+            } else {
+                showNotification("You do not have a worker profile. Apply to become a worker.", "warn");
+                closeProfileModal();
+                setTimeout(() => openApplyModal(), 500);
+            }
+        });
+    }
+
+    // Render client profile data and orders
+    function renderUserProfileAndOrders() {
+        if (!currentUser) return;
+        if (profileDisplayName) profileDisplayName.textContent = currentUser.displayName;
+        if (profileEmail) profileEmail.textContent = currentUser.email;
+        if (profileRole) profileRole.textContent = currentUser.role || 'client';
+
+        if (userOrdersListener) {
+            // Unsubscribe existing listener to prevent leaks
+            userOrdersListener();
+            userOrdersListener = null;
+        }
+
+        // Render orders list
+        if (isFirebaseActive && db) {
+            userOrdersListener = db.collection('orders')
+                .where('email', '==', currentUser.email)
+                .onSnapshot((snapshot) => {
+                    let orders = [];
+                    snapshot.forEach(doc => {
+                        orders.push({ id: doc.id, ...doc.data() });
+                    });
+                    // Sort by submitted time descending
+                    orders.sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+                    displayUserOrders(orders);
+                }, (err) => {
+                    console.error("Error listening to user orders:", err);
+                    displayLocalUserOrders();
+                });
+        } else {
+            displayLocalUserOrders();
+        }
+    }
+
+    function displayLocalUserOrders() {
+        let localOrders = [];
+        try { localOrders = JSON.parse(localStorage.getItem('client_orders') || '[]'); } catch {}
+        const filtered = localOrders.filter(o => o.email === currentUser.email);
+        filtered.sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+        displayUserOrders(filtered);
+    }
+
+    function displayUserOrders(orders) {
+        if (!profileOrdersContainer) return;
+        if (orders.length === 0) {
+            profileOrdersContainer.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 20px;">No orders found. Purchase a plan to get started!</p>';
+            return;
+        }
+
+        profileOrdersContainer.innerHTML = orders.map(order => {
+            const status = order.status || 'pending';
+            const price = order.price || '—';
+            const plan = order.plan || 'Service Plan';
+            const dateStr = new Date(order.submittedAt).toLocaleDateString();
+
+            // Timeline states
+            let step1 = 'completed', step2 = '', step3 = '', step4 = '';
+            if (status === 'pending') step2 = 'active';
+            if (status === 'approved') { step2 = 'completed'; step3 = 'active'; }
+            if (status === 'completed') { step2 = 'completed'; step3 = 'completed'; step4 = 'completed'; }
+            
+            let statusBadgeClass = status;
+            let statusLabel = status.toUpperCase();
+
+            if (status === 'cancelled') {
+                statusBadgeClass = 'rejected';
+                statusLabel = 'CANCELLED';
+            }
+
+            const canCancel = (status === 'pending' || status === 'approved');
+
+            const orderHtml = `
+                <div style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 6px; padding: 18px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 5px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px;">
+                        <div>
+                            <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dark);">${order.id}</div>
+                            <div style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-top: 2px;">${plan}</div>
+                        </div>
+                        <span class="tracker-value badge ${statusBadgeClass}">${statusLabel}</span>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                        <div>Date: <span style="color: var(--text-primary); font-weight: 500;">${dateStr}</span></div>
+                        <div>Price: <span style="color: var(--accent); font-weight: 600;">${price}</span></div>
+                    </div>
+
+                    ${(status !== 'cancelled' && status !== 'rejected') ? `
+                    <!-- Timeline Progress -->
+                    <div class="tracker-timeline" style="margin-top: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;">
+                        <div class="timeline-step ${step1}" style="text-align: center;">
+                            <div class="step-indicator" style="margin: 0 auto; width:20px; height:20px; font-size:0.6rem; line-height:20px;">1</div>
+                            <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">Submitted</div>
+                        </div>
+                        <div class="timeline-step ${step2}" style="text-align: center;">
+                            <div class="step-indicator" style="margin: 0 auto; width:20px; height:20px; font-size:0.6rem; line-height:20px;">2</div>
+                            <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">Verified</div>
+                        </div>
+                        <div class="timeline-step ${step3}" style="text-align: center;">
+                            <div class="step-indicator" style="margin: 0 auto; width:20px; height:20px; font-size:0.6rem; line-height:20px;">3</div>
+                            <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">Building</div>
+                        </div>
+                        <div class="timeline-step ${step4}" style="text-align: center;">
+                            <div class="step-indicator" style="margin: 0 auto; width:20px; height:20px; font-size:0.6rem; line-height:20px;">4</div>
+                            <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">Delivery</div>
+                        </div>
+                    </div>
+                    ` : `
+                    <div style="font-size: 0.75rem; color: var(--text-muted); padding: 5px 0;">This order is closed and no further actions will be taken.</div>
+                    `}
+
+                    ${canCancel ? `
+                    <button class="btn-primary" onclick="window._clientCancelOrder('${order.id}')" style="margin-top: 10px; width:100%; padding: 8px; font-size: 0.72rem; font-family: var(--font-mono); text-transform: uppercase; border-color: var(--red); color: var(--red); justify-content: center;">
+                        Cancel Order
+                    </button>
+                    ` : ''}
+                </div>
+            `;
+            return orderHtml;
+        }).join('');
+        bindHover();
+    }
+
+    // Client Cancel Order Action
+    window._clientCancelOrder = async function(orderId) {
+        if (!confirm("Are you sure you want to cancel this order request?")) return;
+
+        if (isFirebaseActive && db) {
+            try {
+                await db.collection('orders').doc(orderId).update({ status: 'cancelled' });
+                showNotification("Order has been cancelled.", "success");
+            } catch (err) {
+                console.error("Firestore cancel order error:", err);
+                showNotification("Failed to cancel order. Try again.", "error");
+            }
+        } else {
+            // Local fallback
+            let localOrders = [];
+            try { localOrders = JSON.parse(localStorage.getItem('client_orders') || '[]'); } catch {}
+            const oIdx = localOrders.findIndex(o => o.id === orderId);
+            if (oIdx !== -1) {
+                localOrders[oIdx].status = 'cancelled';
+                localStorage.setItem('client_orders', JSON.stringify(localOrders));
+                displayLocalUserOrders();
+                showNotification("Order has been cancelled.", "success");
+            }
+        }
+    };
 
     // Initialize Firebase client-side
     initFirebase();
@@ -1222,9 +1672,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedFileBase64 = '';
     let selectedVodafoneFileBase64 = '';
 
-    // Bind pricing buttons to open modal
+    // Bind pricing buttons to open modal (restricted to authenticated users)
     document.querySelectorAll('.select-plan-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+            if (!currentUser) {
+                showNotification("Please sign in or create an account to purchase a plan.", "warn");
+                openAuthModal();
+                return;
+            }
+            
             const plan = btn.getAttribute('data-plan');
             const price = btn.getAttribute('data-price');
 
@@ -1240,6 +1696,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (fileUploadText) fileUploadText.textContent = "Upload Receipt Screenshot";
             if (vodafoneFileUploadText) vodafoneFileUploadText.textContent = "Upload Transfer Screenshot";
             
+            setFormPrefills(currentUser);
             setPaymentMethod('Kashier');
             if (checkoutModal) checkoutModal.classList.add('active');
             playTone(600, 'sine', 0.1, 0.08);
@@ -2002,6 +2459,14 @@ document.addEventListener('DOMContentLoaded', () => {
             {
                 id: 'design_q2',
                 question: 'Describe your UI/UX design workflow when transitioning a desktop concept into a fully responsive mobile interface. What design systems or grids do you prioritize?'
+            },
+            {
+                id: 'design_q3',
+                question: 'How do you handle client revisions when they clash with fundamental UI/UX accessibility guidelines (e.g., color contrast or font readability)?'
+            },
+            {
+                id: 'design_q4',
+                question: 'What is your process for creating a cohesive brand identity system? What assets do you deliver?'
             }
         ],
         'Web Developer': [
@@ -2012,6 +2477,14 @@ document.addEventListener('DOMContentLoaded', () => {
             {
                 id: 'web_q2',
                 question: 'How do you secure public-facing client-side forms from bot spam and XSS attacks when integrating with Firebase Firestore collections?'
+            },
+            {
+                id: 'web_q3',
+                question: 'Explain the difference between CSR, SSR, and SSG, and when you would choose one over the others for a performance-focused client project.'
+            },
+            {
+                id: 'web_q4',
+                question: 'How do you optimize a website\'s critical rendering path to achieve a 95+ score on Google Lighthouse?'
             }
         ],
         'Programs Developer': [
@@ -2022,6 +2495,14 @@ document.addEventListener('DOMContentLoaded', () => {
             {
                 id: 'prog_q2',
                 question: 'Explain the architectural difference between a monolithic and microservices setup for an enterprise software application. How would you handle database consistency across service boundaries?'
+            },
+            {
+                id: 'prog_q3',
+                question: 'How do you structure database queries and indexing to optimize performance for a read-heavy application handling millions of records?'
+            },
+            {
+                id: 'prog_q4',
+                question: 'What is your approach to automated testing (unit, integration, end-to-end)? How do you ensure high code coverage without slowing down delivery?'
             }
         ]
     };
@@ -2070,7 +2551,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (menuApplyBtn) {
-        menuApplyBtn.addEventListener('click', openApplyModal);
+        menuApplyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!currentUser) {
+                showNotification("Please sign in or create an account to apply.", "warn");
+                openAuthModal();
+            } else {
+                setFormPrefills(currentUser);
+                openApplyModal();
+            }
+        });
     }
     if (closeApplyBtn) {
         closeApplyBtn.addEventListener('click', closeApplyModal);
@@ -2149,6 +2639,11 @@ document.addEventListener('DOMContentLoaded', () => {
         applyForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            if (!currentUser) {
+                showNotification('Please sign in to submit an application.', 'warn');
+                return;
+            }
+
             const name = document.getElementById('apply-name').value.trim();
             const email = document.getElementById('apply-email').value.trim();
             const major = applyMajorSelect.value;
@@ -2183,6 +2678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: 'app_' + Date.now(),
                 name,
                 email,
+                userId: currentUser.uid, // Link to applicant user UID
                 major,
                 website,
                 github,

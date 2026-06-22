@@ -294,32 +294,44 @@
                 </form>
             </div>
 
-            <!-- Secured Signup Form (Injected dynamically if invite code is validated) -->
-            <div id="signup-form-wrapper" style="display: none;">
-                <h1 class="portal-title">Setup Account</h1>
-                <p class="portal-sub">Congratulations! Your application has been approved. Set up your password below to claim your account.</p>
+            <!-- PIN & Password Setup (First Login) -->
+            <div id="setup-form-wrapper" style="display: none;">
+                <h1 class="portal-title">Account Security</h1>
+                <p class="portal-sub">This is your first login. Please choose a permanent password and set up your 2FA Security PIN.</p>
                 
-                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 14px; margin-bottom: 20px;">
-                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 2px;">Name</div>
-                    <div style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);" id="su-name">—</div>
-                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; margin-bottom: 2px;">Email</div>
-                    <div style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);" id="su-email">—</div>
-                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; margin-bottom: 2px;">Role</div>
-                    <div style="font-weight: 600; font-size: 0.88rem; color: var(--accent);" id="su-major">—</div>
-                </div>
-
-                <form id="portal-signup-form" class="checkout-form">
-                    <input type="hidden" id="su-appid">
+                <form id="portal-setup-form" class="checkout-form">
+                    <input type="hidden" id="su-email">
                     <div class="form-group">
-                        <label for="su-password">Create Password</label>
-                        <input type="password" id="su-password" required placeholder="Choose a password..." minlength="6">
+                        <label for="su-password">New Permanent Password</label>
+                        <input type="password" id="su-password" required placeholder="Choose a secure password..." minlength="6">
                     </div>
                     <div class="form-group">
                         <label for="su-password-confirm">Confirm Password</label>
                         <input type="password" id="su-password-confirm" required placeholder="Confirm your password...">
                     </div>
-                    <button type="submit" class="checkout-submit-btn" style="width: 100%; margin-top: 10px;">Register Account</button>
-                    <div class="lock-error" id="signup-error">Passwords do not match. Try again.</div>
+                    <div class="form-group">
+                        <label for="su-pin">Create 6-Digit Security PIN (2FA)</label>
+                        <input type="password" id="su-pin" required pattern="\d{6}" maxlength="6" placeholder="e.g. 123456" style="letter-spacing: 0.5em; text-align: center; font-size: 1.1rem; font-family: monospace;">
+                    </div>
+                    <button type="submit" class="checkout-submit-btn" style="width: 100%; margin-top: 10px;">Save & Unlock Dashboard</button>
+                    <div class="lock-error" id="setup-error">Passwords do not match or PIN is invalid.</div>
+                </form>
+            </div>
+
+            <!-- 2FA Security PIN Verification -->
+            <div id="2fa-form-wrapper" style="display: none;">
+                <h1 class="portal-title">Two-Factor Auth</h1>
+                <p class="portal-sub">Enter the 6-digit Security PIN code associated with your worker profile to proceed.</p>
+                
+                <form id="portal-2fa-form" class="checkout-form">
+                    <input type="hidden" id="2fa-email">
+                    <input type="hidden" id="2fa-pass-hash">
+                    <div class="form-group">
+                        <label style="text-align: center; display: block;">6-Digit Security PIN</label>
+                        <input type="password" id="login-2fa-pin" required pattern="\d{6}" maxlength="6" placeholder="••••••" style="letter-spacing: 0.8em; text-align: center; font-size: 1.5rem; font-family: monospace; padding: 12px 0;">
+                    </div>
+                    <button type="submit" class="checkout-submit-btn" style="width: 100%; margin-top: 10px;">Verify PIN</button>
+                    <div class="lock-error" id="2fa-error">Invalid Security PIN code. Access denied.</div>
                 </form>
             </div>
         </div>
@@ -387,6 +399,18 @@
                             Keep visual assets compressed, use GPU-accelerated translate transitions for custom cursors, and avoid layout-reflow performance hits.
                         </div>
                     </div>
+                </div>
+                
+                <!-- Team Chat Channel -->
+                <h2 class="card-title" style="margin-top: 30px;">Team Chat Channel</h2>
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 14px; height: 350px;">
+                    <div id="chat-messages" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; font-size: 0.8rem; line-height: 1.4;">
+                        <div style="color: var(--text-muted); text-align: center; margin-top: 100px;">No messages in chat.</div>
+                    </div>
+                    <form id="chat-form" style="display: flex; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 12px; margin: 0;">
+                        <input type="text" id="chat-input" required placeholder="Type message..." autocomplete="off" style="flex: 1; padding: 8px 12px; background: rgba(255,255,255,.02); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-family: inherit; font-size: 0.8rem; outline: none; transition: border-color 0.2s;">
+                        <button type="submit" class="btn-logout" style="padding: 8px 14px; border-color: var(--accent); color: var(--accent); font-weight: 600; cursor: none;">Send</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -598,75 +622,148 @@
             bindHover();
         }
 
-        // Register Account
-        const signupForm = document.getElementById('portal-signup-form');
-        if (signupForm) {
-            signupForm.addEventListener('submit', async (e) => {
+        // Setup Account (First Login PIN & Password configuration)
+        const setupForm = document.getElementById('portal-setup-form');
+        if (setupForm) {
+            setupForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const email = document.getElementById('su-email').value;
                 const pass = document.getElementById('su-password').value;
                 const passConf = document.getElementById('su-password-confirm').value;
-                const errorEl = document.getElementById('signup-error');
+                const pin = document.getElementById('su-pin').value;
+                const errorEl = document.getElementById('setup-error');
 
                 if (pass !== passConf) {
+                    errorEl.textContent = "Passwords do not match. Try again.";
                     errorEl.classList.add('show');
                     return;
                 }
-                errorEl.classList.remove('show');
 
-                const appId = document.getElementById('su-appid').value;
-                
-                // Fetch app data again
-                let apps = [];
-                try { apps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
-                let app = apps.find(a => a.id === appId);
-
-                if (!app && isFirebaseActive) {
-                    const doc = await db.collection('applications').doc(appId).get();
-                    if (doc.exists) app = { id: doc.id, ...doc.data() };
-                }
-
-                if (!app) {
-                    toast('Registration error: application data missing.', 'error');
+                if (!/^\d{6}$/.test(pin)) {
+                    errorEl.textContent = "PIN must be exactly 6 digits.";
+                    errorEl.classList.add('show');
                     return;
                 }
 
-                // Create Password hash
-                const passHash = await sha256(pass, app.email + SIGNUP_SALT);
+                errorEl.classList.remove('show');
 
-                const newWorker = {
-                    id: 'work_' + app.email.replace(/\./g, '_'),
-                    name: app.name,
-                    email: app.email,
-                    major: app.major,
-                    passwordHash: passHash,
-                    joinedAt: new Date().toISOString()
-                };
+                // Generate new password hash and PIN hash
+                const newPassHash = await sha256(pass, email + SIGNUP_SALT);
+                const pinHash = await sha256(pin, email + SIGNUP_SALT);
 
-                // Save Worker locally
-                let localWorkers = [];
-                try { localWorkers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
-                localWorkers.push(newWorker);
-                localStorage.setItem('client_workers', JSON.stringify(localWorkers));
+                // Load workers
+                let workers = [];
+                try { workers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
+                let workerIdx = workers.findIndex(w => w.email === email);
+                let worker = null;
 
-                // Save Worker to firestore
-                if (isFirebaseActive && db) {
+                if (workerIdx !== -1) {
+                    worker = workers[workerIdx];
+                    worker.passwordHash = newPassHash;
+                    worker.twoFactorSetup = true;
+                    worker.twoFactorPINHash = pinHash;
+                    workers[workerIdx] = worker;
+                    localStorage.setItem('client_workers', JSON.stringify(workers));
+                } else if (isFirebaseActive || FIREBASE_CONFIG.apiKey) {
                     try {
-                        const { id, ...workerData } = newWorker;
-                        await db.collection('workers').doc(id).set(workerData);
+                        await initFirebase();
+                        const doc = await db.collection('workers').doc('work_' + email.replace(/\./g, '_')).get();
+                        if (doc.exists) {
+                            worker = { id: doc.id, ...doc.data() };
+                            worker.passwordHash = newPassHash;
+                            worker.twoFactorSetup = true;
+                            worker.twoFactorPINHash = pinHash;
+                        }
                     } catch (err) {
-                        console.error("Error syncing worker to Firestore:", err);
+                        console.error("Setup Firestore fetch error:", err);
                     }
                 }
 
-                toast('Account setup successful! You can now log in.', 'success');
+                if (!worker) {
+                    toast('Error locating worker profile.', 'error');
+                    return;
+                }
+
+                // Sync to Firestore
+                if (isFirebaseActive && db) {
+                    try {
+                        const { id, ...workerData } = worker;
+                        await db.collection('workers').doc(worker.id || ('work_' + email.replace(/\./g, '_'))).set(workerData);
+                    } catch (err) {
+                        console.error("Firestore worker update error:", err);
+                    }
+                }
+
+                // Login directly
+                sessionStorage.setItem('workerOk', '1');
+                sessionStorage.setItem('workerEmail', email);
+                localStorage.setItem('active_worker_profile', JSON.stringify(worker));
+
+                toast('Credentials and 2FA PIN configured successfully!', 'success');
                 setTimeout(() => {
-                    // Redirect to login (clean query params)
-                    window.location.href = window.location.pathname;
-                }, 2000);
+                    document.getElementById('portal-lock').style.display = 'none';
+                    document.getElementById('portal-dash').style.display = 'block';
+                    renderWorkerData();
+                }, 800);
             });
         }
 
-        // Sign In
+        // 2FA Security PIN Verification Form
+        const twoFaForm = document.getElementById('portal-2fa-form');
+        if (twoFaForm) {
+            twoFaForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('2fa-email').value;
+                const pin = document.getElementById('login-2fa-pin').value;
+                const errorEl = document.getElementById('2fa-error');
+
+                // Find worker
+                let workers = [];
+                try { workers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
+                let worker = workers.find(w => w.email === email);
+
+                if (!worker && (isFirebaseActive || FIREBASE_CONFIG.apiKey)) {
+                    try {
+                        await initFirebase();
+                        const doc = await db.collection('workers').doc('work_' + email.replace(/\./g, '_')).get();
+                        if (doc.exists) {
+                            worker = { id: doc.id, ...doc.data() };
+                        }
+                    } catch (err) {
+                        console.error("2FA Firestore fetch error:", err);
+                    }
+                }
+
+                if (!worker) {
+                    toast('Error locating worker profile.', 'error');
+                    return;
+                }
+
+                // Verify PIN hash
+                const pinHashAttempt = await sha256(pin, email + SIGNUP_SALT);
+                if (pinHashAttempt !== worker.twoFactorPINHash) {
+                    errorEl.classList.add('show');
+                    return;
+                }
+
+                errorEl.classList.remove('show');
+
+                // Login Success
+                sessionStorage.setItem('workerOk', '1');
+                sessionStorage.setItem('workerEmail', email);
+                localStorage.setItem('active_worker_profile', JSON.stringify(worker));
+
+                toast(`Welcome back, ${worker.name}!`, 'success');
+
+                setTimeout(() => {
+                    document.getElementById('portal-lock').style.display = 'none';
+                    document.getElementById('portal-dash').style.display = 'block';
+                    renderWorkerData();
+                }, 500);
+            });
+        }
+
+        // Sign In Form (Decoy Login Form)
         const loginForm = document.getElementById('portal-login-form');
         if (loginForm) {
             loginForm.addEventListener('submit', async (e) => {
@@ -680,7 +777,7 @@
                 try { workers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
                 let worker = workers.find(w => w.email === email);
 
-                if (!worker && FIREBASE_CONFIG.apiKey) {
+                if (!worker && (isFirebaseActive || FIREBASE_CONFIG.apiKey)) {
                     // Fetch worker from Firestore
                     try {
                         await initFirebase();
@@ -694,30 +791,40 @@
                 }
 
                 if (!worker) {
+                    errorEl.textContent = "Invalid credentials. Access denied.";
                     errorEl.classList.add('show');
                     return;
                 }
 
                 const hashAttempt = await sha256(pass, email + SIGNUP_SALT);
                 if (hashAttempt !== worker.passwordHash) {
+                    errorEl.textContent = "Invalid credentials. Access denied.";
                     errorEl.classList.add('show');
                     return;
                 }
 
                 errorEl.classList.remove('show');
                 
-                // Login Success
-                sessionStorage.setItem('workerOk', '1');
-                sessionStorage.setItem('workerEmail', email);
-                localStorage.setItem('active_worker_profile', JSON.stringify(worker));
-                
-                toast(`Welcome back, ${worker.name}!`, 'success');
-                
-                setTimeout(() => {
-                    document.getElementById('portal-lock').style.display = 'none';
-                    document.getElementById('portal-dash').style.display = 'block';
-                    initFirebase(); // start firebase listeners for assigned orders
-                }, 500);
+                // Route worker based on 2FA configuration state
+                if (worker.twoFactorSetup === false) {
+                    // Force permanent credentials & 2FA PIN setup
+                    document.getElementById('login-form-wrapper').style.display = 'none';
+                    document.getElementById('setup-form-wrapper').style.display = 'block';
+                    document.getElementById('su-email').value = email;
+                    document.getElementById('lock-eyebrow').textContent = "Security Setup";
+                    toast("Temporary credentials accepted. Complete account setup.", "info");
+                } else {
+                    // Route to PIN verification
+                    document.getElementById('login-form-wrapper').style.display = 'none';
+                    document.getElementById('2fa-form-wrapper').style.display = 'block';
+                    document.getElementById('2fa-email').value = email;
+                    document.getElementById('2fa-pass-hash').value = hashAttempt;
+                    document.getElementById('lock-eyebrow').textContent = "2FA Verification";
+                    setTimeout(() => {
+                        const pinInput = document.getElementById('login-2fa-pin');
+                        if (pinInput) pinInput.focus();
+                    }, 100);
+                }
             });
         }
 
@@ -728,6 +835,114 @@
                 document.getElementById('portal-dash').style.display = 'block';
                 renderWorkerData();
             }
+        }
+
+        // Real-Time Worker Chat logic
+        let chatUnsubscribe = null;
+
+        function setupWorkerChatListener() {
+            if (!db) return;
+            if (chatUnsubscribe) chatUnsubscribe();
+
+            chatUnsubscribe = db.collection('worker_chat')
+                .orderBy('timestamp', 'asc')
+                .limitToLast(50)
+                .onSnapshot(snapshot => {
+                    let messages = [];
+                    snapshot.forEach(doc => {
+                        messages.push(doc.data());
+                    });
+                    renderChatMessages(messages);
+                }, err => {
+                    console.error("Chat sync error:", err);
+                    initLocalChat();
+                });
+        }
+
+        function initLocalChat() {
+            function loadLocalChat() {
+                let msgs = [];
+                try { msgs = JSON.parse(localStorage.getItem('client_worker_chat') || '[]'); } catch {}
+                renderChatMessages(msgs);
+            }
+            loadLocalChat();
+            setInterval(loadLocalChat, 2000);
+        }
+
+        function renderChatMessages(messages) {
+            const container = document.getElementById('chat-messages');
+            if (!container) return;
+
+            const profile = JSON.parse(localStorage.getItem('active_worker_profile') || '{}');
+            const myEmail = profile.email || '';
+
+            if (!messages.length) {
+                container.innerHTML = '<div style="color: var(--text-muted); text-align: center; margin-top: 100px;">No messages in chat.</div>';
+                return;
+            }
+
+            container.innerHTML = messages.map(msg => {
+                const isSelf = msg.senderEmail === myEmail;
+                const dateStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+                const senderName = msg.senderName || 'Anonymous';
+                const roleLabel = msg.role || 'Worker';
+                const text = msg.text || '';
+
+                return `
+                    <div style="display: flex; flex-direction: column; background: ${isSelf ? 'rgba(212,175,55,0.04)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${isSelf ? 'rgba(212,175,55,0.15)' : 'var(--border-color)'}; border-radius: 6px; padding: 8px 10px; align-self: ${isSelf ? 'flex-end' : 'flex-start'}; width: 85%; box-sizing: border-box; margin-bottom: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px;">
+                            <span style="font-weight: 700; color: ${isSelf ? 'var(--accent)' : 'var(--text-primary)'}; font-size: 0.78rem;">${esc(senderName)}</span>
+                            <span style="font-size: 0.62rem; color: var(--text-muted);">${dateStr}</span>
+                        </div>
+                        <div style="font-size: 0.62rem; color: var(--accent); margin-bottom: 4px; font-family: monospace; text-transform: uppercase;">[${esc(roleLabel)}]</div>
+                        <div style="color: #dfdfe2; word-break: break-word; font-size: 0.78rem;">${esc(text)}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        const chatForm = document.getElementById('chat-form');
+        if (chatForm) {
+            chatForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const inputEl = document.getElementById('chat-input');
+                const text = inputEl.value.trim();
+                if (!text) return;
+
+                const profile = JSON.parse(localStorage.getItem('active_worker_profile') || '{}');
+                if (!profile.email) {
+                    toast('Error: Worker profile not loaded.', 'error');
+                    return;
+                }
+
+                const newMsg = {
+                    senderName: profile.name,
+                    senderEmail: profile.email,
+                    role: profile.major || 'Worker',
+                    text: text,
+                    timestamp: new Date().toISOString()
+                };
+
+                inputEl.value = '';
+
+                if (isFirebaseActive && db) {
+                    try {
+                        await db.collection('worker_chat').add(newMsg);
+                    } catch (err) {
+                        console.error("Firestore post message error:", err);
+                        toast('Error sending message to server.', 'error');
+                    }
+                } else {
+                    let msgs = [];
+                    try { msgs = JSON.parse(localStorage.getItem('client_worker_chat') || '[]'); } catch {}
+                    msgs.push(newMsg);
+                    if (msgs.length > 50) msgs.shift();
+                    localStorage.setItem('client_worker_chat', JSON.stringify(msgs));
+                    renderChatMessages(msgs);
+                }
+            });
         }
 
         // Render Dashboard data
@@ -742,16 +957,13 @@
             let orders = [];
             try { orders = JSON.parse(localStorage.getItem('client_orders') || '[]'); } catch {}
             
-            // Filter assigned orders
             const assignedOrders = orders.filter(o => o.assignedWorkerEmail === profile.email);
-            
             const container = document.getElementById('project-list-container');
             
             document.getElementById('stat-count').textContent = assignedOrders.length;
             
-            // Calculate earnings: 15% of all COMPLETED assigned orders
             let totalEarnings = 0;
-            const completedAssigned = assignedOrders.filter(o => o.status === 'completed' || o.status === 'approved'); // completed order has status completed or approved
+            const completedAssigned = assignedOrders.filter(o => o.status === 'completed' || o.status === 'approved');
 
             completedAssigned.forEach(o => {
                 const priceNum = parseFloat(o.price.replace(/[^\d.]/g, '')) || 0;
@@ -761,44 +973,50 @@
 
             if (!assignedOrders.length) {
                 container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; padding: 24px; text-align: center; background: rgba(255,255,255,.01); border: 1px dashed var(--border-color); border-radius: 6px;">No projects currently assigned to you.</p>';
-                return;
+            } else {
+                container.innerHTML = assignedOrders.map((o, idx) => {
+                    const priceNum = parseFloat(o.price.replace(/[^\d.]/g, '')) || 0;
+                    const commission = (priceNum * 0.15).toLocaleString('en-EG');
+                    
+                    let statusLabel = `<span class="badge pending">Assigned</span>`;
+                    let actionBtn = `<button class="btn-logout" onclick="window._workerCompleteProject('${o.id}')" style="cursor:none; font-size:.7rem; padding:6px 12px; margin-top:8px;">Mark Project Completed</button>`;
+                    
+                    if (o.status === 'completed' || o.status === 'approved') {
+                        statusLabel = `<span class="badge approved">Completed</span>`;
+                        actionBtn = '';
+                    } else if (o.status === 'rejected') {
+                        statusLabel = `<span class="badge rejected">Cancelled</span>`;
+                        actionBtn = '';
+                    }
+
+                    return `
+                        <div class="project-card">
+                            <div class="project-meta">
+                                <span class="project-name">${esc(o.plan)}</span>
+                                <span class="project-price">${esc(o.price)}</span>
+                            </div>
+                            <div style="font-size:.75rem; color:var(--text-muted);">Client: <strong>${esc(o.name)}</strong> (${esc(o.email)})</div>
+                            <div class="project-brief">${esc(o.brief || o.projectBrief || 'No brief provided.')}</div>
+                            <div class="project-commission">
+                                <span>Your 15% commission:</span>
+                                <span class="commission-amt">${commission} EGP</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                                ${statusLabel}
+                                ${actionBtn}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Sync chat messages
+            if (isFirebaseActive) {
+                setupWorkerChatListener();
+            } else {
+                initLocalChat();
             }
 
-            container.innerHTML = assignedOrders.map((o, idx) => {
-                const priceNum = parseFloat(o.price.replace(/[^\d.]/g, '')) || 0;
-                const commission = (priceNum * 0.15).toLocaleString('en-EG');
-                
-                let statusLabel = `<span class="badge pending">Assigned</span>`;
-                let actionBtn = `<button class="btn-logout" onclick="window._workerCompleteProject('${o.id}')" style="cursor:none; font-size:.7rem; padding:6px 12px; margin-top:8px;">Mark Project Completed</button>`;
-                
-                if (o.status === 'completed' || o.status === 'approved') {
-                    statusLabel = `<span class="badge approved">Completed</span>`;
-                    actionBtn = '';
-                } else if (o.status === 'rejected') {
-                    statusLabel = `<span class="badge rejected">Cancelled</span>`;
-                    actionBtn = '';
-                }
-
-                return `
-                    <div class="project-card">
-                        <div class="project-meta">
-                            <span class="project-name">${esc(o.plan)}</span>
-                            <span class="project-price">${esc(o.price)}</span>
-                        </div>
-                        <div style="font-size:.75rem; color:var(--text-muted);">Client: <strong>${esc(o.name)}</strong> (${esc(o.email)})</div>
-                        <div class="project-brief">${esc(o.brief || o.projectBrief || 'No brief provided.')}</div>
-                        <div class="project-commission">
-                            <span>Your 15% commission:</span>
-                            <span class="commission-amt">${commission} EGP</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-                            ${statusLabel}
-                            ${actionBtn}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
             bindHover();
         }
 
@@ -814,7 +1032,6 @@
                 toast('Project marked as completed! Commission earned.', 'success');
                 renderWorkerData();
                 
-                // Sync to Firestore
                 if (isFirebaseActive && db) {
                     try {
                         await db.collection('orders').doc(orderId).update({ 
@@ -835,13 +1052,17 @@
                 sessionStorage.removeItem('workerOk');
                 sessionStorage.removeItem('workerEmail');
                 localStorage.removeItem('active_worker_profile');
-                window.location.href = window.location.pathname; // refresh page to decoy screen
+                if (chatUnsubscribe) {
+                    chatUnsubscribe();
+                    chatUnsubscribe = null;
+                }
+                window.location.href = window.location.pathname;
             });
         }
 
         // Page loader lifecycle
         window.addEventListener('load', async () => {
-            await validateInvite();
+            await initFirebase();
             initWorkerDashboard();
         });
 
