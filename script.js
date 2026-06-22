@@ -89,7 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const signupForm = document.getElementById('signup-form');
     const googleAuthBtn = document.getElementById('google-auth-btn');
     const googleBtnText = document.getElementById('google-btn-text');
-    const appleAuthBtn = document.getElementById('apple-auth-btn');
 
     const profileDisplayName = document.getElementById('profile-display-name');
     const profileEmail = document.getElementById('profile-email');
@@ -396,54 +395,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) {
                 console.error("Google Auth error:", err);
                 showNotification(err.message || "Google authentication failed.", "error");
-            }
-        });
-    }
-
-    // Apple Sign In / Sign Up Handler
-    if (appleAuthBtn) {
-        appleAuthBtn.addEventListener('click', async () => {
-            if (!isFirebaseActive) {
-                showNotification("Apple Authentication is only available in cloud deployment mode.", "warn");
-                return;
-            }
-            try {
-                const provider = new firebase.auth.OAuthProvider('apple.com');
-                provider.addScope('email');
-                provider.addScope('name');
-
-                const userCredential = await firebase.auth().signInWithPopup(provider);
-                const firebaseUser = userCredential.user;
-                const uid = firebaseUser.uid;
-
-                // Check if account exists
-                const userDoc = await db.collection('users').doc(uid).get();
-                if (userDoc.exists) {
-                    // Sign In Successful
-                    showNotification(`Welcome back, ${userDoc.data().displayName}!`, "success");
-                    closeAuthModal();
-                } else {
-                    // Check if it is a sign-up action or block
-                    const isSignUpTab = tabSignUp.classList.contains('active');
-                    if (!isSignUpTab) {
-                        await firebase.auth().signOut();
-                        showNotification("Account does not exist. Please sign up first.", "error");
-                        return;
-                    }
-                    // Sign Up Flow - Create user doc
-                    const newUserData = {
-                        displayName: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'Apple User'),
-                        email: firebaseUser.email || '',
-                        role: 'client',
-                        createdAt: new Date().toISOString()
-                    };
-                    await db.collection('users').doc(uid).set(newUserData);
-                    showNotification("Apple Account registered successfully!", "success");
-                    closeAuthModal();
-                }
-            } catch (err) {
-                console.error("Apple Auth error:", err);
-                showNotification(err.message || "Apple authentication failed.", "error");
             }
         });
     }
