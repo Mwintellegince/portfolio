@@ -363,11 +363,21 @@
         </div>
 
         <div class="dashboard-main">
-            <!-- Project Queue -->
+            <!-- Project Queue & Pool & Help Requests -->
             <div>
                 <h2 class="card-title">Assigned Projects</h2>
                 <div class="project-list" id="project-list-container">
                     <p style="color: var(--text-muted); font-size: 0.85rem;">No projects assigned to you yet.</p>
+                </div>
+
+                <h2 class="card-title" style="margin-top: 30px;">Available Projects Pool</h2>
+                <div class="project-list" id="available-project-list-container">
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">No approved projects currently in the pool.</p>
+                </div>
+
+                <h2 class="card-title" style="margin-top: 30px;">Active Help Requests</h2>
+                <div class="project-list" id="help-request-list-container">
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">No active help requests.</p>
                 </div>
             </div>
 
@@ -517,8 +527,8 @@
             const email = sessionStorage.getItem('workerEmail');
             if (!email) return;
 
-            // Listen to orders
-            db.collection('orders').where('assignedWorkerEmail', '==', email).onSnapshot(snapshot => {
+            // Listen to all orders (pool and help requests need visibility over all orders)
+            db.collection('orders').onSnapshot(snapshot => {
                 let orders = [];
                 snapshot.forEach(doc => {
                     orders.push({ id: doc.id, ...doc.data() });
@@ -972,22 +982,49 @@
             });
             document.getElementById('stat-earnings').textContent = `${totalEarnings.toLocaleString('en-EG')} EGP`;
 
+            // 1. RENDER ASSIGNED PROJECTS
             if (!assignedOrders.length) {
                 container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; padding: 24px; text-align: center; background: rgba(255,255,255,.01); border: 1px dashed var(--border-color); border-radius: 6px;">No projects currently assigned to you.</p>';
             } else {
-                container.innerHTML = assignedOrders.map((o, idx) => {
+                container.innerHTML = assignedOrders.map((o) => {
                     const priceNum = parseFloat(o.price.replace(/[^\d.]/g, '')) || 0;
                     const commission = (priceNum * 0.15).toLocaleString('en-EG');
                     
                     let statusLabel = `<span class="badge pending">Assigned</span>`;
                     let actionBtn = `<button class="btn-logout" onclick="window._workerCompleteProject('${o.id}')" style="cursor:none; font-size:.7rem; padding:6px 12px; margin-top:8px;">Mark Project Completed</button>`;
                     
-                    if (o.status === 'completed' || o.status === 'approved') {
+                    if (o.status === 'completed') {
                         statusLabel = `<span class="badge approved">Completed</span>`;
                         actionBtn = '';
-                    } else if (o.status === 'rejected') {
+                    } else if (o.status === 'rejected' || o.status === 'cancelled') {
                         statusLabel = `<span class="badge rejected">Cancelled</span>`;
                         actionBtn = '';
+                    }
+
+                    // Help section
+                    let helpSectionHtml = '';
+                    if (o.status === 'approved') {
+                        if (!o.helpRequested) {
+                            helpSectionHtml = `
+                                <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+                                    <button class="btn-logout" onclick="window._workerRequestHelp('${o.id}')" style="cursor:none; font-size:.65rem; padding:4px 8px; border-color:var(--accent); color:var(--accent);">Request Help</button>
+                                </div>
+                            `;
+                        } else {
+                            const helpersCount = o.helpers ? o.helpers.length : 0;
+                            const helpersList = o.helpers && o.helpers.length 
+                                ? o.helpers.map(h => esc(h.name)).join(', ') 
+                                : 'None yet';
+                            helpSectionHtml = `
+                                <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 6px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span class="badge pending" style="font-size: .62rem; padding: 2px 6px;">Help Requested (${helpersCount}/3)</span>
+                                        <button class="btn-logout" onclick="window._workerCancelHelp('${o.id}')" style="cursor:none; font-size:.6rem; padding:3px 6px; border-color:var(--red); color:var(--red);">Cancel Help</button>
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted);">Helpers: <strong>${helpersList}</strong></div>
+                                </div>
+                            `;
+                        }
                     }
 
                     return `
@@ -1006,9 +1043,84 @@
                                 ${statusLabel}
                                 ${actionBtn}
                             </div>
+                            ${helpSectionHtml}
                         </div>
                     `;
                 }).join('');
+            }
+
+            // 2. RENDER AVAILABLE PROJECTS POOL
+            const availableContainer = document.getElementById('available-project-list-container');
+            const poolOrders = orders.filter(o => o.status === 'approved' && (!o.assignedWorkerEmail || o.assignedWorkerEmail === ''));
+
+            if (availableContainer) {
+                if (!poolOrders.length) {
+                    availableContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; padding: 24px; text-align: center; background: rgba(255,255,255,.01); border: 1px dashed var(--border-color); border-radius: 6px;">No approved projects currently in the pool.</p>';
+                } else {
+                    availableContainer.innerHTML = poolOrders.map(o => {
+                        return `
+                            <div class="project-card">
+                                <div class="project-meta">
+                                    <span class="project-name">${esc(o.plan)}</span>
+                                    <span class="project-price">${esc(o.price)}</span>
+                                </div>
+                                <div style="font-size:.75rem; color:var(--text-muted);">Client: <strong>${esc(o.name)}</strong></div>
+                                <div class="project-brief">${esc(o.brief || o.projectBrief || 'No brief provided.')}</div>
+                                <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+                                    <button class="btn-logout" onclick="window._workerClaimProject('${o.id}')" style="cursor:none; font-size:.7rem; padding:6px 12px; border-color:var(--green); color:var(--green);">Claim Project</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            // 3. RENDER ACTIVE HELP REQUESTS QUEUE
+            const helpContainer = document.getElementById('help-request-list-container');
+            const helpOrders = orders.filter(o => o.helpRequested === true && o.assignedWorkerEmail !== profile.email && o.status === 'approved');
+
+            if (helpContainer) {
+                if (!helpOrders.length) {
+                    helpContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; padding: 24px; text-align: center; background: rgba(255,255,255,.01); border: 1px dashed var(--border-color); border-radius: 6px;">No active help requests.</p>';
+                } else {
+                    helpContainer.innerHTML = helpOrders.map(o => {
+                        const helpers = o.helpers || [];
+                        const isHelping = helpers.some(h => h.email === profile.email);
+                        const isFull = helpers.length >= 3;
+                        
+                        let helpActionHtml = '';
+                        if (isHelping) {
+                            helpActionHtml = `
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span class="badge approved" style="font-size:.6rem; padding:2px 6px; background:rgba(46,204,113,0.1); color:var(--green); border-color:var(--green);">You are helping</span>
+                                    <button class="btn-logout" onclick="window._workerLeaveHelp('${o.id}')" style="cursor:none; font-size:.6rem; padding:3px 6px; border-color:var(--red); color:var(--red);">Leave</button>
+                                </div>
+                            `;
+                        } else if (isFull) {
+                            helpActionHtml = `<span class="badge" style="font-size:.6rem; padding:2px 6px; background:rgba(255,255,255,0.05); color:var(--text-muted); border-color:var(--border-color);">Helpers Limit Reached (3/3)</span>`;
+                        } else {
+                            helpActionHtml = `<button class="btn-logout" onclick="window._workerJoinHelp('${o.id}')" style="cursor:none; font-size:.7rem; padding:6px 12px; border-color:var(--accent); color:var(--accent);">Approve to Help</button>`;
+                        }
+
+                        const helpersList = helpers.length 
+                            ? helpers.map(h => esc(h.name)).join(', ') 
+                            : 'None yet';
+
+                        return `
+                            <div class="project-card">
+                                <div class="project-meta">
+                                    <span class="project-name">${esc(o.plan)}</span>
+                                    <span class="project-price" style="font-size:.75rem; color:var(--text-muted);">Lead: <strong>${esc(o.assignedWorkerName || o.assignedWorkerEmail.split('@')[0])}</strong></span>
+                                </div>
+                                <div class="project-brief">${esc(o.brief || o.projectBrief || 'No brief provided.')}</div>
+                                <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:8px;">Helpers (${helpers.length}/3): <strong>${helpersList}</strong></div>
+                                <div style="display:flex; justify-content:flex-end;">
+                                    ${helpActionHtml}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
             }
             
             // Sync chat messages
@@ -1041,6 +1153,161 @@
                         });
                     } catch (err) {
                         console.error("Firestore complete project sync error:", err);
+                    }
+                }
+            }
+        };
+
+        // Claim project from available pool
+        window._workerClaimProject = async function(orderId) {
+            const profile = JSON.parse(localStorage.getItem('active_worker_profile') || '{}');
+            if (!profile.email) return;
+
+            let orders = [];
+            try { orders = JSON.parse(localStorage.getItem('client_orders') || '[]'); } catch {}
+            const idx = orders.findIndex(o => o.id === orderId);
+            if (idx !== -1) {
+                orders[idx].assignedWorkerEmail = profile.email;
+                orders[idx].assignedWorkerName = profile.name;
+                localStorage.setItem('client_orders', JSON.stringify(orders));
+                toast('Project claimed successfully!', 'success');
+                renderWorkerData();
+
+                if (isFirebaseActive && db) {
+                    try {
+                        await db.collection('orders').doc(orderId).update({
+                            assignedWorkerEmail: profile.email,
+                            assignedWorkerName: profile.name
+                        });
+                    } catch (err) {
+                        console.error("Firestore claim project error:", err);
+                    }
+                }
+            }
+        };
+
+        // Request help from team
+        window._workerRequestHelp = async function(orderId) {
+            let orders = [];
+            try { orders = JSON.parse(localStorage.getItem('client_orders') || '[]'); } catch {}
+            const idx = orders.findIndex(o => o.id === orderId);
+            if (idx !== -1) {
+                orders[idx].helpRequested = true;
+                orders[idx].helpers = [];
+                localStorage.setItem('client_orders', JSON.stringify(orders));
+                toast('Help requested from the team!', 'info');
+                renderWorkerData();
+
+                if (isFirebaseActive && db) {
+                    try {
+                        await db.collection('orders').doc(orderId).update({
+                            helpRequested: true,
+                            helpers: []
+                        });
+                    } catch (err) {
+                        console.error("Firestore request help error:", err);
+                    }
+                }
+            }
+        };
+
+        // Cancel help request
+        window._workerCancelHelp = async function(orderId) {
+            let orders = [];
+            try { orders = JSON.parse(localStorage.getItem('client_orders') || '[]'); } catch {}
+            const idx = orders.findIndex(o => o.id === orderId);
+            if (idx !== -1) {
+                orders[idx].helpRequested = false;
+                orders[idx].helpers = [];
+                localStorage.setItem('client_orders', JSON.stringify(orders));
+                toast('Help request cancelled.', 'info');
+                renderWorkerData();
+
+                if (isFirebaseActive && db) {
+                    try {
+                        await db.collection('orders').doc(orderId).update({
+                            helpRequested: false,
+                            helpers: []
+                        });
+                    } catch (err) {
+                        console.error("Firestore cancel help error:", err);
+                    }
+                }
+            }
+        };
+
+        // Approve to help (join helpers list)
+        window._workerJoinHelp = async function(orderId) {
+            const profile = JSON.parse(localStorage.getItem('active_worker_profile') || '{}');
+            if (!profile.email) return;
+
+            let orders = [];
+            try { orders = JSON.parse(localStorage.getItem('client_orders') || '[]'); } catch {}
+            const idx = orders.findIndex(o => o.id === orderId);
+            if (idx !== -1) {
+                const order = orders[idx];
+                const helpers = order.helpers || [];
+
+                // Validate limit of 3 helpers
+                if (helpers.length >= 3) {
+                    toast('Cannot join: Maximum limit of 3 helpers reached.', 'error');
+                    return;
+                }
+
+                // Check if already joined
+                if (helpers.some(h => h.email === profile.email)) {
+                    toast('You are already helping on this project.', 'warn');
+                    return;
+                }
+
+                helpers.push({
+                    email: profile.email,
+                    name: profile.name
+                });
+
+                order.helpers = helpers;
+                localStorage.setItem('client_orders', JSON.stringify(orders));
+                toast('Joined as helper!', 'success');
+                renderWorkerData();
+
+                if (isFirebaseActive && db) {
+                    try {
+                        await db.collection('orders').doc(orderId).update({
+                            helpers: helpers
+                        });
+                    } catch (err) {
+                        console.error("Firestore join help error:", err);
+                    }
+                }
+            }
+        };
+
+        // Leave helpers list
+        window._workerLeaveHelp = async function(orderId) {
+            const profile = JSON.parse(localStorage.getItem('active_worker_profile') || '{}');
+            if (!profile.email) return;
+
+            let orders = [];
+            try { orders = JSON.parse(localStorage.getItem('client_orders') || '[]'); } catch {}
+            const idx = orders.findIndex(o => o.id === orderId);
+            if (idx !== -1) {
+                const order = orders[idx];
+                let helpers = order.helpers || [];
+
+                helpers = helpers.filter(h => h.email !== profile.email);
+                order.helpers = helpers;
+
+                localStorage.setItem('client_orders', JSON.stringify(orders));
+                toast('Left help request.', 'info');
+                renderWorkerData();
+
+                if (isFirebaseActive && db) {
+                    try {
+                        await db.collection('orders').doc(orderId).update({
+                            helpers: helpers
+                        });
+                    } catch (err) {
+                        console.error("Firestore leave help error:", err);
                     }
                 }
             }

@@ -665,7 +665,15 @@
                     <textarea id="client-brief" rows="3" required placeholder="Describe what you want me to design or build..."></textarea>
                 </div>
 
-                <div class="form-group">
+                <!-- Auth Warning for Payment -->
+                <div id="checkout-auth-warning" class="payment-fields-note warning hidden" style="border-left-color: var(--accent); margin-bottom: 20px; padding: 15px; border-radius: 4px; border-left-width: 4px; border-left-style: solid;">
+                    <p style="margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--text-primary); font-family: var(--font-sans);">
+                        You can't buy a plan until you sign up or sign in.
+                    </p>
+                    <button type="button" id="checkout-signin-btn" class="btn-primary" style="margin-top: 12px; font-size: 0.72rem; padding: 8px 16px; cursor: none; text-transform: uppercase; font-family: var(--font-mono);">Sign In / Sign Up</button>
+                </div>
+
+                <div class="form-group" id="checkout-payment-wrapper">
                     <label>Select Payment Method</label>
                     <div class="payment-method-toggle-group">
                         <button type="button" class="pay-method-btn active" data-method="Kashier">Card Payment (EGP)</button>

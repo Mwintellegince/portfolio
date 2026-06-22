@@ -1720,15 +1720,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedFileBase64 = '';
     let selectedVodafoneFileBase64 = '';
 
-    // Bind pricing buttons to open modal (restricted to authenticated users)
+    // Bind pricing buttons to open modal (conditional visibility for unauthenticated users)
     document.querySelectorAll('.select-plan-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (!currentUser) {
-                showNotification("Please sign in or create an account to purchase a plan.", "warn");
-                openAuthModal();
-                return;
-            }
-            
             const plan = btn.getAttribute('data-plan');
             const price = btn.getAttribute('data-price');
 
@@ -1744,8 +1738,29 @@ document.addEventListener('DOMContentLoaded', () => {
             if (fileUploadText) fileUploadText.textContent = "Upload Receipt Screenshot";
             if (vodafoneFileUploadText) vodafoneFileUploadText.textContent = "Upload Transfer Screenshot";
             
-            setFormPrefills(currentUser);
-            setPaymentMethod('Kashier');
+            const authWarning = document.getElementById('checkout-auth-warning');
+            const paymentWrapper = document.getElementById('checkout-payment-wrapper');
+            const submitBtn = checkoutForm ? checkoutForm.querySelector('.checkout-submit-btn') : null;
+
+            if (!currentUser) {
+                if (authWarning) authWarning.classList.remove('hidden');
+                if (paymentWrapper) paymentWrapper.classList.add('hidden');
+                
+                // Hide all payment fields
+                if (paypalFields) paypalFields.classList.add('hidden');
+                if (instapayFields) instapayFields.classList.add('hidden');
+                if (vodafoneFields) vodafoneFields.classList.add('hidden');
+                if (kashierFields) kashierFields.classList.add('hidden');
+                
+                if (submitBtn) submitBtn.style.setProperty('display', 'none', 'important');
+            } else {
+                if (authWarning) authWarning.classList.add('hidden');
+                if (paymentWrapper) paymentWrapper.classList.remove('hidden');
+                
+                setFormPrefills(currentUser);
+                setPaymentMethod('Kashier');
+            }
+            
             if (checkoutModal) checkoutModal.classList.add('active');
             playTone(600, 'sine', 0.1, 0.08);
         });
@@ -1790,6 +1805,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target === checkoutModal) {
                 checkoutModal.classList.remove('active');
             }
+        });
+    }
+
+    const checkoutSigninBtn = document.getElementById('checkout-signin-btn');
+    if (checkoutSigninBtn) {
+        checkoutSigninBtn.addEventListener('click', () => {
+            if (checkoutModal) checkoutModal.classList.remove('active');
+            openAuthModal();
         });
     }
 
