@@ -2813,6 +2813,8 @@ body.terminal-theme .seq-pad.active.playing {
     border-radius: 6px;
     width: 90%;
     max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
     padding: 35px;
     position: relative;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
