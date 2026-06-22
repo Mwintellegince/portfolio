@@ -313,11 +313,13 @@ section {
     align-items: center;
     gap: 12px;
     padding: 18px 36px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--accent);
     border-radius: 4px;
     font-size: 0.95rem;
     font-weight: 500;
     background-color: transparent;
+    color: var(--text-primary);
+    cursor: none;
     transition: var(--transition-smooth);
     position: relative;
     overflow: hidden;
@@ -2735,7 +2737,7 @@ body.terminal-theme .seq-pad.active.playing {
 
 .plan-card {
     border: 1px solid var(--border-color);
-    background-color: rgba(20, 20, 23, 0.2);
+    background-color: var(--bg-card);
     border-radius: 4px;
     padding: 30px;
     display: flex;
@@ -2929,7 +2931,7 @@ body.terminal-theme .seq-pad.active.playing {
     text-transform: uppercase;
 }
 
-.form-group input, .form-group textarea {
+.form-group input, .form-group select, .form-group textarea {
     background-color: var(--bg-dark);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
@@ -2941,8 +2943,34 @@ body.terminal-theme .seq-pad.active.playing {
     transition: var(--transition-fast);
 }
 
-.form-group input:focus, .form-group textarea:focus {
+.form-group select {
+    cursor: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d4af37' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 16px;
+    padding-right: 40px !important;
+}
+
+body.light-theme .form-group select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aa7c11' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+body.terminal-theme .form-group select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2355ff55' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.form-group select option {
+    background-color: var(--bg-card);
+    color: var(--text-primary);
+    padding: 10px;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     border-color: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .payment-method-toggle-group {
@@ -3031,6 +3059,31 @@ body.terminal-theme .seq-pad.active.playing {
 
 .file-input-hidden {
     display: none !important;
+}
+
+#apply-cv {
+    cursor: none;
+}
+
+#apply-cv::file-selector-button {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background-color: var(--bg-dark);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: none;
+    margin-right: 12px;
+    transition: var(--transition-fast);
+}
+
+#apply-cv::file-selector-button:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+    background-color: var(--accent-glow);
 }
 
 /* ==========================================================================
@@ -4471,7 +4524,7 @@ body.has-announcement .site-header {
     height: 16px;
     border: 1px solid var(--border-color);
     border-radius: 3px;
-    background: var(--bg-body);
+    background: var(--bg-dark);
     outline: none;
     cursor: none;
     position: relative;
@@ -4512,7 +4565,7 @@ body.has-announcement .site-header {
     width: 100%;
     min-height: 80px;
     padding: 12px;
-    background: var(--bg-body);
+    background: var(--bg-dark);
     border: 1px solid var(--border-color);
     border-radius: 4px;
     color: var(--text-primary);
