@@ -1211,13 +1211,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const paypalFields = document.getElementById('paypal-fields');
     const instapayFields = document.getElementById('instapay-fields');
     const vodafoneFields = document.getElementById('vodafone-fields');
+    const kashierFields = document.getElementById('kashier-fields');
     
     const receiptFileInput = document.getElementById('instapay-receipt');
     const fileUploadText = document.getElementById('file-upload-text');
     const vodafoneFileInput = document.getElementById('vodafone-receipt');
     const vodafoneFileUploadText = document.getElementById('vodafone-file-upload-text');
 
-    let currentPaymentMethod = 'PayPal';
+    let currentPaymentMethod = 'Kashier';
     let selectedFileBase64 = '';
     let selectedVodafoneFileBase64 = '';
 
@@ -1239,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (fileUploadText) fileUploadText.textContent = "Upload Receipt Screenshot";
             if (vodafoneFileUploadText) vodafoneFileUploadText.textContent = "Upload Transfer Screenshot";
             
-            setPaymentMethod('PayPal');
+            setPaymentMethod('Kashier');
             if (checkoutModal) checkoutModal.classList.add('active');
             playTone(600, 'sine', 0.1, 0.08);
         });
@@ -1278,13 +1279,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (paypalFields) paypalFields.classList.add('hidden');
         if (instapayFields) instapayFields.classList.add('hidden');
         if (vodafoneFields) vodafoneFields.classList.add('hidden');
+        if (kashierFields) kashierFields.classList.add('hidden');
 
         // Toggle required validation fields and standard submit button
         const ipaEl = document.getElementById('instapay-ipa');
         const vCashNumEl = document.getElementById('vodafone-number');
         const submitBtn = checkoutForm ? checkoutForm.querySelector('.checkout-submit-btn') : null;
 
-        if (method === 'PayPal') {
+        if (method === 'Kashier') {
+            if (kashierFields) kashierFields.classList.remove('hidden');
+            if (ipaEl) ipaEl.required = false;
+            if (vCashNumEl) vCashNumEl.required = false;
+            if (submitBtn) {
+                submitBtn.style.display = 'flex';
+                submitBtn.querySelector('span').textContent = 'Proceed to Card Payment';
+            }
+        } else if (method === 'PayPal') {
             if (paypalFields) paypalFields.classList.remove('hidden');
             if (ipaEl) ipaEl.required = false;
             if (vCashNumEl) vCashNumEl.required = false;
@@ -1456,6 +1466,84 @@ document.addEventListener('DOMContentLoaded', () => {
             const clientName  = document.getElementById('client-name').value.trim();
             const clientEmail = document.getElementById('client-email').value.trim();
             const clientBrief = document.getElementById('client-brief').value.trim();
+
+            // ── KASHIER CARD FLOW ──
+            if (currentPaymentMethod === 'Kashier') {
+                const orderId = 'ord_' + Date.now();
+                showNotification('Preparing secure card payment gateway...', 'info');
+
+                const submitBtn = checkoutForm.querySelector('.checkout-submit-btn');
+                const submitBtnSpan = submitBtn ? submitBtn.querySelector('span') : null;
+                const originalText = submitBtnSpan ? submitBtnSpan.textContent : 'Proceed to Card Payment';
+                if (submitBtnSpan) submitBtnSpan.textContent = 'Connecting...';
+                if (submitBtn) submitBtn.disabled = true;
+
+                try {
+                    let response;
+                    const payload = { orderId, amount: price, currency: 'EGP' };
+
+                    try {
+                        response = await fetch('/api/kashierHash', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Endpoint /api/kashierHash failed with status ' + response.status);
+                        }
+                    } catch (fetchErr) {
+                        console.warn('Vercel API fetch failed, trying Firebase Cloud Function fallback...', fetchErr);
+                        const fallbackUrl = 'https://us-central1-portfolio-9fd39.cloudfunctions.net/kashierHash';
+                        response = await fetch(fallbackUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    }
+
+                    if (!response || !response.ok) {
+                        throw new Error('Payment gateway server response error');
+                    }
+
+                    const data = await response.json();
+                    if (!data.paymentUrl) {
+                        throw new Error('Invalid response from payment gateway: missing paymentUrl');
+                    }
+
+                    // Save the pending order
+                    const order = {
+                        id:            orderId,
+                        name:          clientName,
+                        email:         clientEmail,
+                        plan:          planName,
+                        price:         price + ' EGP',
+                        paymentMethod: 'Kashier Card',
+                        brief:         clientBrief,
+                        receipt:       null,
+                        status:        'pending',
+                        submittedAt:   new Date().toISOString()
+                    };
+                    saveNewOrder(order);
+
+                    // Success audio feedback
+                    playTone(523.25, 'sine', 0.15, 0.1);
+                    setTimeout(() => playTone(659.25, 'sine', 0.15, 0.1), 100);
+                    setTimeout(() => playTone(783.99, 'sine', 0.3,  0.1), 200);
+
+                    showNotification('Redirecting to Kashier secure checkout...', 'success');
+                    setTimeout(() => {
+                        window.location.href = data.paymentUrl;
+                    }, 800);
+
+                } catch (err) {
+                    console.error('Kashier redirect error:', err);
+                    showNotification('Could not connect to card gateway. Please use Vodafone Cash / InstaPay or try again.', 'error');
+                    if (submitBtnSpan) submitBtnSpan.textContent = originalText;
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+                return;
+            }
 
             // ── INSTAPAY FLOW ──
             if (currentPaymentMethod === 'InstaPay') {

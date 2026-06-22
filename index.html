@@ -549,14 +549,22 @@
                 <div class="form-group">
                     <label>Select Payment Method</label>
                     <div class="payment-method-toggle-group">
-                        <button type="button" class="pay-method-btn active" data-method="PayPal">PayPal / Card</button>
+                        <button type="button" class="pay-method-btn active" data-method="Kashier">Card Payment (EGP)</button>
+                        <button type="button" class="pay-method-btn" data-method="PayPal">PayPal (USD)</button>
                         <button type="button" class="pay-method-btn" data-method="InstaPay">InstaPay (Egypt)</button>
                         <button type="button" class="pay-method-btn" data-method="VodafoneCash">Vodafone Cash</button>
                     </div>
                 </div>
 
+                <!-- Kashier Credit/Debit Card Fields Container -->
+                <div class="payment-fields-section" id="kashier-fields">
+                    <p class="payment-fields-note" style="border-left-color: var(--accent); margin-bottom: 20px;">
+                        Pay securely with your credit or debit card (Visa / MasterCard). You will be redirected to the secure checkout page powered by <strong class="highlight">Kashier</strong>.
+                    </p>
+                </div>
+
                 <!-- PayPal Fields Container -->
-                <div class="payment-fields-section" id="paypal-fields">
+                <div class="payment-fields-section hidden" id="paypal-fields">
                     <p class="payment-fields-note" style="border-left-color: #0070ba; margin-bottom: 20px;">
                         Pay securely with your PayPal balance or major credit/debit card.
                     </p>
@@ -738,6 +746,34 @@
                     <h4 class="policies-drawer-sub-title">Intellectual Property</h4>
                     <p class="policies-drawer-text">
                         All original concept designs, code files, and assets created during production remain the intellectual property of Mohamed Abdelhamid until the final balance payment is processed. Upon completion of payment, full ownership rights for final deliverables transfer to the client.
+                    </p>
+                    <h4 class="policies-drawer-sub-title">Merchant Compliance & Billing Info</h4>
+                    <p class="policies-drawer-text">
+                        This website is owned and operated by <strong>Mohamed Abdelhamid</strong>, a freelance software and systems engineer based in Cairo, Egypt.
+                    </p>
+                    <p class="policies-drawer-text">
+                        <strong>Accepted Payment Methods:</strong> We accept online card payments via Visa and MasterCard, and local transfer options (InstaPay, Vodafone Cash).
+                    </p>
+                    <p class="policies-drawer-text">
+                        All online credit/debit card transactions are processed securely through the <strong>Kashier Payment Gateway</strong> (Kashier.io). We do not store or process cardholder details on our servers.
+                    </p>
+                    <p class="policies-drawer-text">
+                        <strong>Service Delivery Policy:</strong> All design and development services are delivered digitally (via email, secure download link, or GitHub repository invite). Estimated delivery timelines begin after order approval:
+                    </p>
+                    <ul class="policies-drawer-list">
+                        <li>Vector Brand Design: Digital assets delivered within 3–7 business days.</li>
+                        <li>Single-Page Site: Live site deployment and code repository delivered within 7–14 business days.</li>
+                        <li>Custom Engineering: Layouts and firmwares delivered within 14–30 business days.</li>
+                    </ul>
+                    <p class="policies-drawer-text">
+                        <strong>Governing Law:</strong> These terms of service and client contracts are governed by and construed under the laws of the Arab Republic of Egypt.
+                    </p>
+                    <h4 class="policies-drawer-sub-title">Contact & Support Info</h4>
+                    <p class="policies-drawer-text">
+                        For inquiries, billing issues, or refunds, contact us at:<br>
+                        <strong>Email:</strong> contact.mohamedwael.v@gmail.com<br>
+                        <strong>Phone:</strong> +20 121 254 9545<br>
+                        <strong>Address:</strong> Cairo, Egypt
                     </p>
                 </section>
 
