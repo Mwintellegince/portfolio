@@ -4350,3 +4350,203 @@ body.terminal-theme .policies-drawer-highlight {
     background: rgba(51, 255, 51, 0.05);
     border-left: 2px solid #33ff33;
 }
+
+/* ==========================================================================
+   ANNOUNCEMENT BANNER & CAREERS MODAL
+   ========================================================================== */
+/* Announcement Banner */
+.announcement-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 44px;
+    background: rgba(10, 10, 12, 0.7);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.15);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+}
+
+body.has-announcement .site-header {
+    top: 44px;
+}
+
+.site-header {
+    transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    justify-content: center;
+}
+
+.banner-badge {
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    font-family: var(--font-mono);
+}
+
+.banner-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+}
+
+.banner-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.8rem;
+    transition: var(--transition-fast);
+    font-family: var(--font-sans);
+}
+
+.banner-link:hover {
+    color: var(--text-primary);
+    text-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+}
+
+.banner-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    cursor: none;
+    transition: var(--transition-fast);
+    padding: 0;
+    line-height: 1;
+}
+
+.banner-close-btn:hover {
+    color: var(--text-primary);
+}
+
+/* Skills Checkbox Grid */
+.skills-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 10px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.skill-check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    cursor: none;
+    user-select: none;
+    transition: var(--transition-fast);
+}
+
+.skill-check-item:hover {
+    color: var(--text-primary);
+}
+
+.skill-check-item input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    background: var(--bg-body);
+    outline: none;
+    cursor: none;
+    position: relative;
+    transition: var(--transition-fast);
+}
+
+.skill-check-item input[type="checkbox"]:checked {
+    border-color: var(--accent);
+    background: rgba(212, 175, 55, 0.1);
+}
+
+.skill-check-item input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--accent);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* Challenge Questions styling */
+.challenge-question {
+    margin-bottom: 15px;
+}
+
+.challenge-question label {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: block;
+    line-height: 1.4;
+}
+
+.challenge-question textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    background: var(--bg-body);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.85rem;
+    outline: none;
+    resize: vertical;
+    transition: var(--transition-fast);
+}
+
+.challenge-question textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.15);
+}
+
+@media (max-width: 768px) {
+    .announcement-banner {
+        padding: 0 15px;
+    }
+    .banner-content {
+        gap: 8px;
+        flex-wrap: wrap;
+        text-align: center;
+    }
+    .banner-text {
+        font-size: 0.72rem;
+    }
+    .banner-link {
+        font-size: 0.72rem;
+    }
+    body.has-announcement .site-header {
+        top: 44px;
+    }
+    .skills-checkbox-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1975,6 +1975,351 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /* ==========================================================================
+       ANNOUNCEMENT BANNER & CAREERS MODAL CONTROLLERS
+       ========================================================================== */
+    const MAJOR_SKILLS = {
+        'Graphic Designer': [
+            'Figma', 'Adobe Photoshop', 'Adobe Illustrator', 'Adobe After Effects',
+            'Blender 3D', 'Branding & Identity', 'UI/UX Layouts', 'Typography'
+        ],
+        'Web Developer': [
+            'HTML5 & CSS3', 'JavaScript (ES6+)', 'React.js / Vue.js', 'Node.js & Express',
+            'TailwindCSS', 'REST APIs & GraphQL', 'Git & Version Control', 'Web Performance Optimization'
+        ],
+        'Programs Developer': [
+            'Python (Advanced)', 'C++ / C#', 'Java', 'Desktop GUI (Qt / Electron)',
+            'AI & Machine Learning Integration', 'Databases (SQL & NoSQL)', 'System Architecture', 'Scripting & Automation'
+        ]
+    };
+
+    const MAJOR_QUESTIONS = {
+        'Graphic Designer': [
+            {
+                id: 'design_q1',
+                question: 'How do you optimize vector assets and brand exports for high-resolution displays without quality loss or excessive file size?'
+            },
+            {
+                id: 'design_q2',
+                question: 'Describe your UI/UX design workflow when transitioning a desktop concept into a fully responsive mobile interface. What design systems or grids do you prioritize?'
+            }
+        ],
+        'Web Developer': [
+            {
+                id: 'web_q1',
+                question: 'Explain how you would diagnose and resolve a layout thrashing issue caused by repetitive DOM reads and writes in a high-frequency event handler (e.g., custom cursor/scroll).'
+            },
+            {
+                id: 'web_q2',
+                question: 'How do you secure public-facing client-side forms from bot spam and XSS attacks when integrating with Firebase Firestore collections?'
+            }
+        ],
+        'Programs Developer': [
+            {
+                id: 'prog_q1',
+                question: 'How do you design a thread-safe worker pool in your preferred programming language to handle concurrent, high-throughput network scraping jobs?'
+            },
+            {
+                id: 'prog_q2',
+                question: 'Explain the architectural difference between a monolithic and microservices setup for an enterprise software application. How would you handle database consistency across service boundaries?'
+            }
+        ]
+    };
+
+    const applyModal = document.getElementById('apply-modal');
+    const closeApplyBtn = document.getElementById('close-apply');
+    const menuApplyBtn = document.getElementById('menu-apply-btn');
+    const applyMajorSelect = document.getElementById('apply-major');
+    const applySkillsSection = document.getElementById('apply-skills-section');
+    const applySkillsGrid = document.getElementById('apply-skills-grid');
+    const applyQuestionsSection = document.getElementById('apply-questions-section');
+    const applyQuestionsContainer = document.getElementById('apply-questions-container');
+    const applyCvInput = document.getElementById('apply-cv');
+    const applyForm = document.getElementById('apply-form');
+    const announcementBanner = document.getElementById('announcement-banner');
+    const bannerText = document.getElementById('banner-text');
+    const bannerActionBtn = document.getElementById('banner-action-btn');
+    const closeBannerBtn = document.getElementById('close-banner');
+
+    let uploadedCvBase64 = null;
+
+    // Toggle Modal
+    function openApplyModal(e) {
+        if (e) e.preventDefault();
+        
+        if (siteNav && siteNav.classList.contains('nav-open')) {
+            siteNav.classList.remove('nav-open');
+            if (navHamburger) {
+                navHamburger.classList.remove('open');
+                navHamburger.setAttribute('aria-expanded', 'false');
+            }
+            document.body.style.overflow = '';
+        }
+
+        if (applyModal) {
+            applyModal.classList.add('active');
+            playTone(550, 'sine', 0.1, 0.05);
+        }
+    }
+
+    function closeApplyModal() {
+        if (applyModal) {
+            applyModal.classList.remove('active');
+            playTone(400, 'sine', 0.1, 0.05);
+        }
+    }
+
+    if (menuApplyBtn) {
+        menuApplyBtn.addEventListener('click', openApplyModal);
+    }
+    if (closeApplyBtn) {
+        closeApplyBtn.addEventListener('click', closeApplyModal);
+    }
+    if (applyModal) {
+        applyModal.addEventListener('click', (e) => {
+            if (e.target === applyModal) closeApplyModal();
+        });
+    }
+
+    // Dynamic rendering of fields
+    if (applyMajorSelect) {
+        applyMajorSelect.addEventListener('change', () => {
+            const major = applyMajorSelect.value;
+            
+            // Render Skills
+            const skills = MAJOR_SKILLS[major] || [];
+            if (skills.length > 0) {
+                applySkillsGrid.innerHTML = skills.map((skill, idx) => `
+                    <label class="skill-check-item">
+                        <input type="checkbox" name="skills" value="${skill}">
+                        <span>${skill}</span>
+                    </label>
+                `).join('');
+                applySkillsSection.classList.remove('hidden');
+            } else {
+                applySkillsSection.classList.add('hidden');
+            }
+
+            // Render Questions
+            const questions = MAJOR_QUESTIONS[major] || [];
+            if (questions.length > 0) {
+                applyQuestionsContainer.innerHTML = questions.map((q, idx) => `
+                    <div class="challenge-question">
+                        <label for="apply-q-${idx}"><strong>Question ${idx + 1}:</strong> ${q.question}</label>
+                        <textarea id="apply-q-${idx}" required rows="3" placeholder="Write your professional response..."></textarea>
+                    </div>
+                `).join('');
+                applyQuestionsSection.classList.remove('hidden');
+            } else {
+                applyQuestionsSection.classList.add('hidden');
+            }
+        });
+    }
+
+    // CV Reader with 800KB check
+    if (applyCvInput) {
+        applyCvInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                uploadedCvBase64 = null;
+                return;
+            }
+            if (file.size > 800 * 1024) {
+                showNotification('File is too large. CV must be smaller than 800KB.', 'error');
+                applyCvInput.value = '';
+                uploadedCvBase64 = null;
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                uploadedCvBase64 = evt.target.result;
+                showNotification('CV loaded successfully.', 'success');
+            };
+            reader.onerror = function() {
+                showNotification('Error reading file.', 'error');
+                applyCvInput.value = '';
+                uploadedCvBase64 = null;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Submit Application
+    if (applyForm) {
+        applyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('apply-name').value.trim();
+            const email = document.getElementById('apply-email').value.trim();
+            const major = applyMajorSelect.value;
+            const website = document.getElementById('apply-website').value.trim();
+            const github = document.getElementById('apply-github').value.trim();
+            const contribution = document.getElementById('apply-contribution').value.trim();
+
+            if (!uploadedCvBase64) {
+                showNotification('Please upload your CV (PDF or Image, max 800KB).', 'warn');
+                return;
+            }
+
+            // Gather selected skills
+            const selectedSkills = [];
+            applyForm.querySelectorAll('input[name="skills"]:checked').forEach(cb => {
+                selectedSkills.push(cb.value);
+            });
+
+            // Gather question responses
+            const responses = [];
+            const questions = MAJOR_QUESTIONS[major] || [];
+            questions.forEach((q, idx) => {
+                const answerVal = document.getElementById(`apply-q-${idx}`).value.trim();
+                responses.push({
+                    questionId: q.id,
+                    questionText: q.question,
+                    answerText: answerVal
+                });
+            });
+
+            const application = {
+                id: 'app_' + Date.now(),
+                name,
+                email,
+                major,
+                website,
+                github,
+                skills: selectedSkills,
+                answers: responses,
+                cv: uploadedCvBase64,
+                contribution,
+                status: 'pending',
+                submittedAt: new Date().toISOString()
+            };
+
+            // Save Application
+            let localApps = [];
+            try { localApps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
+            localApps.push(application);
+            localStorage.setItem('client_applications', JSON.stringify(localApps));
+
+            // Firestore sync
+            if (typeof isFirebaseActive !== 'undefined' && isFirebaseActive && typeof db !== 'undefined' && db) {
+                try {
+                    const { id, ...appData } = application;
+                    await db.collection('applications').doc(id).set(appData);
+                } catch (err) {
+                    console.error('Firestore application sync error:', err);
+                }
+            }
+
+            playTone(523.25, 'sine', 0.15, 0.1);
+            setTimeout(() => playTone(659.25, 'sine', 0.15, 0.1), 100);
+            setTimeout(() => playTone(783.99, 'sine', 0.3,  0.1), 200);
+
+            showNotification('Application submitted successfully! I will review your submission soon.', 'success');
+            
+            closeApplyModal();
+            applyForm.reset();
+            uploadedCvBase64 = null;
+            if (applySkillsSection) applySkillsSection.classList.add('hidden');
+            if (applyQuestionsSection) applyQuestionsSection.classList.add('hidden');
+        });
+    }
+
+    // Announcement Banner Management
+    function loadActiveAnnouncement() {
+        if (typeof isFirebaseActive !== 'undefined' && isFirebaseActive && typeof db !== 'undefined' && db) {
+            db.collection('announcements').where('isActive', '==', true).limit(1).get()
+                .then(snapshot => {
+                    if (!snapshot.empty) {
+                        const doc = snapshot.docs[0];
+                        displayAnnouncement({ id: doc.id, ...doc.data() });
+                    } else {
+                        displayAnnouncement(null);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error fetching announcement from firestore:', err);
+                    loadLocalActiveAnnouncement();
+                });
+        } else {
+            loadLocalActiveAnnouncement();
+        }
+    }
+
+    function loadLocalActiveAnnouncement() {
+        let announcements = [];
+        try { announcements = JSON.parse(localStorage.getItem('client_announcements') || '[]'); } catch {}
+        const active = announcements.find(a => a.isActive);
+        if (active) {
+            displayAnnouncement(active);
+        } else {
+            // Default recruitment announcement fallback
+            const defaultAnn = {
+                id: 'default_recruitment',
+                text: 'We are hiring! Looking for Graphic Designers, Web Developers, and Programs Developers.',
+                linkText: 'Apply Now',
+                linkUrl: '#apply',
+                isActive: true,
+                isRecruitment: true
+            };
+            displayAnnouncement(defaultAnn);
+        }
+    }
+
+    function displayAnnouncement(ann) {
+        if (!ann || !announcementBanner) {
+            if (announcementBanner) announcementBanner.style.display = 'none';
+            document.body.classList.remove('has-announcement');
+            return;
+        }
+
+        // Check if dismissed in this session
+        if (sessionStorage.getItem('dismissed_announcement_' + ann.id) === '1') {
+            announcementBanner.style.display = 'none';
+            document.body.classList.remove('has-announcement');
+            return;
+        }
+
+        bannerText.textContent = ann.text;
+        
+        if (ann.linkText) {
+            bannerActionBtn.textContent = ann.linkText + ' →';
+            bannerActionBtn.style.display = 'inline-block';
+            
+            // Set link action
+            bannerActionBtn.onclick = (e) => {
+                e.preventDefault();
+                if (ann.isRecruitment || ann.linkUrl === '#apply') {
+                    openApplyModal();
+                } else if (ann.linkUrl) {
+                    window.open(ann.linkUrl, '_blank');
+                }
+            };
+        } else {
+            bannerActionBtn.style.display = 'none';
+        }
+
+        announcementBanner.style.display = 'flex';
+        document.body.classList.add('has-announcement');
+
+        // Dismiss handler
+        if (closeBannerBtn) {
+            closeBannerBtn.onclick = () => {
+                sessionStorage.setItem('dismissed_announcement_' + ann.id, '1');
+                announcementBanner.style.opacity = '0';
+                announcementBanner.style.transform = 'translateY(-100%)';
+                setTimeout(() => {
+                    announcementBanner.style.display = 'none';
+                    announcementBanner.style.opacity = '';
+                    announcementBanner.style.transform = '';
+                    document.body.classList.remove('has-announcement');
+                }, 400);
+            };
+        }
+    }
+
+    // Call banner initializer after initialization
+    setTimeout(loadActiveAnnouncement, 500);
+
 });
 
 

@@ -723,6 +723,17 @@
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                 Receipts
             </button>
+
+            <div class="nav-section-label">Recruitment</div>
+            <button class="nav-item" data-page="applications">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Applications
+                <span class="nav-badge" id="nav-badge-applications">0</span>
+            </button>
+            <button class="nav-item" data-page="announcements">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                Announcements
+            </button>
         </nav>
 
         <div class="sidebar-footer">
@@ -877,6 +888,94 @@
             </div>
         </div>
 
+        <!-- ── APPLICATIONS PAGE ── -->
+        <div class="page" id="page-applications">
+            <div class="page-header">
+                <div class="page-eyebrow">Recruitment</div>
+                <h1 class="page-title">Applications</h1>
+                <p class="page-sub">Review and manage candidates who applied to join your team.</p>
+            </div>
+
+            <div class="section-card">
+                <div class="section-head">
+                    <h2>Job Applicants</h2>
+                    <span class="count-pill" id="apps-pill">0</span>
+                    <button class="refresh-btn" id="apps-refresh-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23,4 23,10 17,10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        Refresh
+                    </button>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Candidate</th>
+                            <th>Role / Major</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th>Links</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="apps-tbody">
+                        <tr class="empty-row"><td colspan="6">No applications received yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── ANNOUNCEMENTS PAGE ── -->
+        <div class="page" id="page-announcements">
+            <div class="page-header">
+                <div class="page-eyebrow">Marketing</div>
+                <h1 class="page-title">Announcements</h1>
+                <p class="page-sub">Create and manage top-bar banners shown to website visitors.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px;">
+                <!-- Add Form -->
+                <div class="section-card" style="padding: 24px; height: fit-content;">
+                    <div class="section-head" style="margin-bottom: 20px;">
+                        <h2>New Announcement</h2>
+                    </div>
+                    <form id="announcement-form" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: .78rem; font-weight: 600; color: var(--muted);">Banner Text</label>
+                            <textarea id="ann-text" required rows="3" placeholder="e.g. We are looking for talented developers! Apply here." style="width:100%; padding: 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: .82rem; outline: none;"></textarea>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: .78rem; font-weight: 600; color: var(--muted);">Action Link Text (Optional)</label>
+                            <input type="text" id="ann-link-text" placeholder="e.g. Apply Now" style="width:100%; padding: 10px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: .82rem; outline: none;">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: .78rem; font-weight: 600; color: var(--muted);">Action Link URL (Optional)</label>
+                            <input type="text" id="ann-link-url" placeholder="e.g. #apply or https://example.com" style="width:100%; padding: 10px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: .82rem; outline: none;">
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                            <input type="checkbox" id="ann-recruitment" style="accent-color: var(--gold); cursor: none;">
+                            <label for="ann-recruitment" style="font-size: .8rem; color: var(--text); cursor: none;">Is Recruitment Banner? (Opens Apply Modal)</label>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="ann-active" checked style="accent-color: var(--gold); cursor: none;">
+                            <label for="ann-active" style="font-size: .8rem; color: var(--text); cursor: none;">Make Active Immediately</label>
+                        </div>
+
+                        <button type="submit" class="modal-btn primary" style="width: 100%; margin-top: 10px; cursor: none;">Publish Announcement</button>
+                    </form>
+                </div>
+
+                <!-- Banners List -->
+                <div class="section-card" style="padding: 24px;">
+                    <div class="section-head" style="margin-bottom: 20px;">
+                        <h2>All Announcements</h2>
+                    </div>
+                    <div id="announcements-list" style="display: flex; flex-direction: column; gap: 14px;">
+                        <div style="padding:40px; text-align:center; color:var(--muted); font-size:.82rem;">No announcements created yet.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div><!-- /main-content -->
 </div><!-- /app -->
 
@@ -946,9 +1045,57 @@
             <span class="mirl">Brief</span>
             <span class="mirr" id="dm-brief" style="max-width:260px;text-align:right;font-size:.78rem;line-height:1.5;">—</span>
         </div>
+        <div class="modal-info-row" style="align-items:center; border-top:1px solid rgba(255,255,255,.04); padding-top:12px; margin-top:8px;">
+            <span class="mirl">Assign Worker</span>
+            <select id="dm-assign-worker" style="padding: 6px 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: .8rem; outline: none; cursor: none;">
+                <option value="">Unassigned</option>
+            </select>
+        </div>
 
         <div class="modal-actions">
             <button class="modal-btn ghost" id="dm-close">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== APPLICATION DETAIL MODAL ========== -->
+<div class="modal-overlay" id="app-detail-modal">
+    <div class="modal-box" style="max-width: 560px; max-height: 85vh; overflow-y: auto;">
+        <div class="modal-title">Application Details</div>
+        <div class="modal-sub" id="adm-id">—</div>
+
+        <div class="modal-info-row">
+            <span class="mirl">Candidate</span>
+            <span class="mirr" id="adm-name">—</span>
+        </div>
+        <div class="modal-info-row">
+            <span class="mirl">Email</span>
+            <span class="mirr" id="adm-email">—</span>
+        </div>
+        <div class="modal-info-row">
+            <span class="mirl">Major / Role</span>
+            <span class="mirr gold" id="adm-major">—</span>
+        </div>
+        <div class="modal-info-row" style="align-items: flex-start; flex-direction: column; gap: 8px;">
+            <span class="mirl">Selected Skills:</span>
+            <div id="adm-skills" style="display: flex; flex-wrap: wrap; gap: 6px; width: 100%; margin-top: 4px;">—</div>
+        </div>
+        <div class="modal-info-row" style="align-items: flex-start; flex-direction: column; gap: 8px; border-bottom: 1px solid rgba(255,255,255,.05); padding-bottom: 14px;">
+            <span class="mirl">Answers to Challenges:</span>
+            <div id="adm-answers" style="display: flex; flex-direction: column; gap: 12px; width: 100%; font-size: .8rem; margin-top: 6px;">—</div>
+        </div>
+        <div class="modal-info-row" style="align-items: flex-start; flex-direction: column; gap: 6px;">
+            <span class="mirl">How they can contribute:</span>
+            <div id="adm-contribution" style="color: var(--text); font-size: .8rem; line-height: 1.5; width: 100%; white-space: pre-wrap; margin-top: 4px;">—</div>
+        </div>
+
+        <div class="modal-warn" style="margin-top: 15px;">
+            <strong>Attachments:</strong> Click below to download or view the candidate's CV document.
+        </div>
+
+        <div class="modal-actions" style="margin-top: 18px;">
+            <a id="adm-cv-btn" href="#" download="" class="modal-btn primary" style="text-align: center; text-decoration: none; display: inline-block; cursor: none;">Download CV</a>
+            <button class="modal-btn ghost" id="adm-close" style="cursor: none;">Close</button>
         </div>
     </div>
 </div>
@@ -964,6 +1111,30 @@
         <div class="modal-actions">
             <button class="modal-btn danger" id="confirm-reset-btn">Yes, Reset Everything</button>
             <button class="modal-btn ghost" id="cancel-reset-btn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== INVITE GENERATOR MODAL ========== -->
+<div class="modal-overlay" id="invite-modal">
+    <div class="modal-box" style="max-width: 500px;">
+        <div class="modal-title">Worker Approved!</div>
+        <div class="modal-sub">A secure worker invite link has been generated. Copy this link and send it directly to the accepted candidate.</div>
+        
+        <div style="margin: 20px 0;">
+            <label style="font-size: .78rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 6px;">Secure Registration Link</label>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="invite-link-input" readonly style="flex: 1; padding: 10px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font-mono); font-size: .78rem; outline: none;" onclick="this.select()">
+                <button class="modal-btn primary" id="copy-invite-btn" style="flex: 0 0 auto; width: 80px; padding: 0; font-size: .72rem; cursor: none;">Copy</button>
+            </div>
+        </div>
+
+        <div class="modal-warn">
+            <strong>Security Warning:</strong> This link contains a cryptographic key tied to the candidate's application. It allows them to set up their password. Do not share it publicly.
+        </div>
+
+        <div class="modal-actions">
+            <button class="modal-btn ghost" id="invite-close-btn" style="cursor: none;">Done</button>
         </div>
     </div>
 </div>

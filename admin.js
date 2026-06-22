@@ -1,5 +1,113 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    /* =====================================================================
+       FIREBASE CONFIGURATION & SYNCHRONIZATION
+    ===================================================================== */
+    // Synchronized with main script config
+    const FIREBASE_CONFIG = {
+        apiKey: "",
+        authDomain: "",
+        projectId: "",
+        storageBucket: "",
+        messagingSenderId: "",
+        appId: ""
+    };
+
+    let db = null;
+    let isFirebaseActive = false;
+
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    async function initFirebase() {
+        if (!FIREBASE_CONFIG.apiKey) {
+            console.log("Firebase config not found for admin. Falling back to LocalStorage.");
+            loadAllData();
+            return false;
+        }
+        try {
+            await loadScript("https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js");
+            await loadScript("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js");
+            
+            if (!firebase.apps.length) {
+                firebase.initializeApp(FIREBASE_CONFIG);
+            }
+            db = firebase.firestore();
+            isFirebaseActive = true;
+            console.log("Firebase Firestore initialized on admin side.");
+            
+            setupFirebaseListeners();
+            return true;
+        } catch (e) {
+            console.error("Failed to initialize Firebase on admin:", e);
+            loadAllData();
+            return false;
+        }
+    }
+
+    function setupFirebaseListeners() {
+        if (!db) return;
+
+        // Sync orders
+        db.collection('orders').onSnapshot(snapshot => {
+            let orders = [];
+            snapshot.forEach(doc => {
+                orders.push({ id: doc.id, ...doc.data() });
+            });
+            localStorage.setItem('client_orders', JSON.stringify(orders));
+            loadAllData();
+        }, err => {
+            console.error("Firebase Orders Sync Error:", err);
+            loadAllData();
+        });
+
+        // Sync applications
+        db.collection('applications').onSnapshot(snapshot => {
+            let apps = [];
+            snapshot.forEach(doc => {
+                apps.push({ id: doc.id, ...doc.data() });
+            });
+            localStorage.setItem('client_applications', JSON.stringify(apps));
+            loadAllData();
+        }, err => {
+            console.error("Firebase Applications Sync Error:", err);
+            loadAllData();
+        });
+
+        // Sync announcements
+        db.collection('announcements').onSnapshot(snapshot => {
+            let anns = [];
+            snapshot.forEach(doc => {
+                anns.push({ id: doc.id, ...doc.data() });
+            });
+            localStorage.setItem('client_announcements', JSON.stringify(anns));
+            loadAllData();
+        }, err => {
+            console.error("Firebase Announcements Sync Error:", err);
+            loadAllData();
+        });
+
+        // Sync workers
+        db.collection('workers').onSnapshot(snapshot => {
+            let workers = [];
+            snapshot.forEach(doc => {
+                workers.push({ id: doc.id, ...doc.data() });
+            });
+            localStorage.setItem('client_workers', JSON.stringify(workers));
+            loadAllData();
+        }, err => {
+            console.error("Firebase Workers Sync Error:", err);
+            loadAllData();
+        });
+    }
+
 
     /* =====================================================================
        CURSOR
@@ -106,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     lockScreen.style.display = 'none';
                     appEl.classList.add('visible');
-                    loadAllData();
+                    initFirebase();
                     bindHover();
                 }, 600);
             }, 400);
@@ -127,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sessionStorage.getItem('adminOk') === '1') {
         lockScreen.style.display = 'none';
         appEl.classList.add('visible');
-        loadAllData();
+        initFirebase();
     }
 
     if (logoutBtn) {
@@ -152,6 +260,8 @@ document.addEventListener('DOMContentLoaded', () => {
         pending:  '/ Pending Orders',
         history:  '/ History',
         receipts: '/ Receipts',
+        applications: '/ Applications',
+        announcements: '/ Announcements'
     };
 
     navItems.forEach(btn => {
@@ -181,6 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPending();
         renderHistory();
         renderReceipts();
+        renderApplications();
+        renderAnnouncements();
         renderActivity();
         updateBadges();
     }
@@ -216,6 +328,12 @@ document.addEventListener('DOMContentLoaded', () => {
         setText('nav-badge-history', history);
         setText('pending-pill', pending);
         setText('history-pill', history);
+
+        // Applications badges
+        const apps = getApplications();
+        const pendingApps = apps.filter(a => !a.status || a.status === 'pending').length;
+        setText('nav-badge-applications', pendingApps);
+        setText('apps-pill', pendingApps);
     }
 
     /* =====================================================================
@@ -387,7 +505,18 @@ document.addEventListener('DOMContentLoaded', () => {
     ===================================================================== */
     let pendingRejectIdx = -1;
 
-    window._adminAccept = function(idx) {
+    async function syncOrderUpdate(order) {
+        if (isFirebaseActive && db) {
+            try {
+                const { id, ...orderData } = order;
+                await db.collection('orders').doc(id).set(orderData);
+            } catch (err) {
+                console.error("Error syncing order update to Firestore:", err);
+            }
+        }
+    }
+
+    window._adminAccept = async function(idx) {
         const orders = getOrders();
         if (!orders[idx]) return;
         orders[idx].status      = 'approved';
@@ -395,6 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveOrders(orders);
         toast(`✓ Order from ${orders[idx].name} accepted.`, 'success');
         loadAllData();
+        await syncOrderUpdate(orders[idx]);
     };
 
     window._adminReject = function(idx) {
@@ -433,6 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
             saveOrders(orders);
             toast(`Order rejected. PayPal/Card refund typically takes 5–14 business days.`, 'error');
             loadAllData();
+            await syncOrderUpdate(orders[idx]);
         }
     };
 
@@ -442,7 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rmCancelBtn   = document.getElementById('rm-cancel');
 
     if (rmConfirmBtn) {
-        rmConfirmBtn.addEventListener('click', () => {
+        rmConfirmBtn.addEventListener('click', async () => {
             if (pendingRejectIdx < 0) return;
             const orders = getOrders();
             orders[pendingRejectIdx].status      = 'rejected';
@@ -450,8 +581,10 @@ document.addEventListener('DOMContentLoaded', () => {
             saveOrders(orders);
             toast(`Refund confirmed. Order rejected.`, 'error');
             refundModal.classList.remove('open');
+            const updatedOrder = orders[pendingRejectIdx];
             pendingRejectIdx = -1;
             loadAllData();
+            await syncOrderUpdate(updatedOrder);
         });
     }
     if (rmCancelBtn) {
@@ -486,17 +619,39 @@ document.addEventListener('DOMContentLoaded', () => {
     /* =====================================================================
        ORDER DETAIL MODAL
     ===================================================================== */
-    window._adminViewDetail = function(idx) {
+    window._adminViewOrder = function(idx) {
         const orders = getOrders();
         const o = orders[idx];
         if (!o) return;
-        setText('dm-id',     `Order #${idx + 1}`);
+        setText('dm-id',     o.id || `Order #${idx + 1}`);
         setText('dm-name',   o.name || '—');
         setText('dm-email',  o.email || '—');
         setText('dm-plan',   o.plan || '—');
         setText('dm-amount', o.price || '—');
         setText('dm-payment', o.paymentMethod || '—');
         setText('dm-brief',  o.brief || o.projectBrief || '—');
+
+        const assignSelect = document.getElementById('dm-assign-worker');
+        if (assignSelect) {
+            const workers = getWorkers();
+            assignSelect.innerHTML = '<option value="">Unassigned</option>' + 
+                workers.map(w => `<option value="${esc(w.email)}">${esc(w.name)} (${esc(w.major)})</option>`).join('');
+            assignSelect.value = o.assignedWorkerEmail || '';
+            assignSelect.onchange = null;
+            assignSelect.onchange = async () => {
+                const selectedEmail = assignSelect.value;
+                orders[idx].assignedWorkerEmail = selectedEmail;
+                saveOrders(orders);
+                if (selectedEmail) {
+                    const worker = workers.find(w => w.email === selectedEmail);
+                    toast(`Order assigned to ${worker ? worker.name : selectedEmail}.`, 'success');
+                } else {
+                    toast('Order unassigned.', 'info');
+                }
+                await syncOrderUpdate(orders[idx]);
+            };
+        }
+
         document.getElementById('detail-modal').classList.add('open');
     };
 
@@ -569,9 +724,423 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* =====================================================================
        AUTO-REFRESH every 30 seconds (live updates)
-    ===================================================================== */
+       ===================================================================== */
     setInterval(() => {
-        if (sessionStorage.getItem('adminOk') === '1') loadAllData();
+        if (sessionStorage.getItem('adminOk') === '1' && !isFirebaseActive) loadAllData();
     }, 30000);
+
+    /* =====================================================================
+       RECRUITMENT (APPLICATIONS) MANAGEMENT
+       ===================================================================== */
+    function getApplications() {
+        try { return JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch { return []; }
+    }
+    function saveApplications(arr) {
+        localStorage.setItem('client_applications', JSON.stringify(arr));
+    }
+
+    async function syncApplicationUpdate(app) {
+        if (isFirebaseActive && db) {
+            try {
+                const { id, ...appData } = app;
+                await db.collection('applications').doc(id).set(appData);
+            } catch (err) {
+                console.error("Error syncing application to Firestore:", err);
+            }
+        }
+    }
+
+    function renderApplications() {
+        const tbody = document.getElementById('apps-tbody');
+        if (!tbody) return;
+
+        const apps = getApplications();
+        if (!apps.length) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No applications received yet.</td></tr>';
+            return;
+        }
+
+        const sorted = apps.map((a, i) => ({ ...a, originalIdx: i }));
+        sorted.sort((a, b) => {
+            if (a.status === 'pending' && b.status !== 'pending') return -1;
+            if (a.status !== 'pending' && b.status === 'pending') return 1;
+            return new Date(b.submittedAt) - new Date(a.submittedAt);
+        });
+
+        tbody.innerHTML = sorted.map(a => {
+            let statusClass = 'pending';
+            if (a.status === 'approved') statusClass = 'approved';
+            if (a.status === 'rejected') statusClass = 'rejected';
+
+            const nameHtml = `
+                <div class="client-name">${esc(a.name)}</div>
+                <div class="client-email">${esc(a.email)}</div>
+            `;
+
+            const dateStr = a.submittedAt ? new Date(a.submittedAt).toLocaleDateString('en-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+            
+            const linksHtml = `
+                <div style="display:flex; gap:8px; font-size:.7rem;">
+                    ${a.website ? `<a href="${esc(a.website)}" target="_blank" class="gold" style="text-decoration:none; cursor:none;">Website</a>` : ''}
+                    ${a.github ? `<a href="${esc(a.github)}" target="_blank" class="gold" style="text-decoration:none; cursor:none;">GitHub</a>` : ''}
+                    ${(!a.website && !a.github) ? '<span style="color:var(--muted);">None</span>' : ''}
+                </div>
+            `;
+
+            const actionsHtml = `
+                <div class="action-group">
+                    <button class="btn-view" onclick="window._adminViewApplication(${a.originalIdx})" style="cursor:none;">View</button>
+                    ${a.status === 'pending' ? `
+                        <button class="btn-accept" onclick="window._adminApproveApplication(${a.originalIdx})" style="cursor:none;">Approve</button>
+                        <button class="btn-reject" onclick="window._adminRejectApplication(${a.originalIdx})" style="cursor:none;">Reject</button>
+                    ` : ''}
+                </div>
+            `;
+
+            return `
+                <tr>
+                    <td>${nameHtml}</td>
+                    <td><strong style="color:var(--text);">${esc(a.major)}</strong></td>
+                    <td><span class="badge ${statusClass}">${a.status}</span></td>
+                    <td>${dateStr}</td>
+                    <td>${linksHtml}</td>
+                    <td>${actionsHtml}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    const appDetailModal = document.getElementById('app-detail-modal');
+    const admCloseBtn = document.getElementById('adm-close');
+
+    if (admCloseBtn) {
+        admCloseBtn.addEventListener('click', () => {
+            if (appDetailModal) appDetailModal.classList.remove('open');
+        });
+    }
+    if (appDetailModal) {
+        appDetailModal.addEventListener('click', (e) => {
+            if (e.target === appDetailModal) appDetailModal.classList.remove('open');
+        });
+    }
+
+    window._adminViewApplication = function(idx) {
+        const apps = getApplications();
+        const app = apps[idx];
+        if (!app) return;
+
+        setText('adm-id', app.id);
+        setText('adm-name', app.name);
+        setText('adm-email', app.email);
+        setText('adm-major', app.major);
+        
+        const skillsContainer = document.getElementById('adm-skills');
+        if (skillsContainer) {
+            if (app.skills && app.skills.length > 0) {
+                skillsContainer.innerHTML = app.skills.map(s => `
+                    <span style="background:rgba(212,175,55,.1); color:var(--gold); border:1px solid rgba(212,175,55,.2); border-radius:4px; padding:3px 8px; font-size:.7rem; font-weight:600;">${esc(s)}</span>
+                `).join('');
+            } else {
+                skillsContainer.innerHTML = '<span style="color:var(--muted); font-size:.8rem;">No skills selected.</span>';
+            }
+        }
+
+        const answersContainer = document.getElementById('adm-answers');
+        if (answersContainer) {
+            if (app.answers && app.answers.length > 0) {
+                answersContainer.innerHTML = app.answers.map(ans => `
+                    <div style="background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:6px; padding:10px 12px; margin-bottom:8px;">
+                        <div style="font-weight:600; color:var(--muted); margin-bottom:4px; font-size:.75rem; white-space:normal;">Q: ${esc(ans.questionText)}</div>
+                        <div style="color:var(--text); line-height:1.4; white-space:pre-wrap; font-size:.78rem;">A: ${esc(ans.answerText)}</div>
+                    </div>
+                `).join('');
+            } else {
+                answersContainer.innerHTML = '<span style="color:var(--muted); font-size:.8rem;">No questions answered.</span>';
+            }
+        }
+
+        setText('adm-contribution', app.contribution || '—');
+
+        const cvBtn = document.getElementById('adm-cv-btn');
+        if (cvBtn) {
+            cvBtn.href = app.cv || '#';
+            cvBtn.download = `CV_${app.name.replace(/\s+/g, '_')}_${app.major.replace(/\s+/g, '_')}`;
+            if (!app.cv) {
+                cvBtn.style.pointerEvents = 'none';
+                cvBtn.style.opacity = '0.5';
+            } else {
+                cvBtn.style.pointerEvents = 'auto';
+                cvBtn.style.opacity = '1';
+            }
+        }
+
+        if (appDetailModal) appDetailModal.classList.add('open');
+    };
+
+    const inviteModal = document.getElementById('invite-modal');
+    const inviteLinkInput = document.getElementById('invite-link-input');
+    const copyInviteBtn = document.getElementById('copy-invite-btn');
+    const inviteCloseBtn = document.getElementById('invite-close-btn');
+
+    if (inviteCloseBtn) {
+        inviteCloseBtn.addEventListener('click', () => {
+            if (inviteModal) inviteModal.classList.remove('open');
+        });
+    }
+    if (inviteModal) {
+        inviteModal.addEventListener('click', (e) => {
+            if (e.target === inviteModal) inviteModal.classList.remove('open');
+        });
+    }
+    if (copyInviteBtn && inviteLinkInput) {
+        copyInviteBtn.addEventListener('click', () => {
+            inviteLinkInput.select();
+            document.execCommand('copy');
+            toast('Invite link copied to clipboard.', 'success');
+        });
+    }
+
+    const INVITE_SALT = "WORKER_PORTAL_INVITE_2026";
+
+    window._adminApproveApplication = async function(idx) {
+        const apps = getApplications();
+        if (!apps[idx]) return;
+        
+        const app = apps[idx];
+        app.status = 'approved';
+        saveApplications(apps);
+        await syncApplicationUpdate(app);
+
+        const appId = app.id;
+        const hashInput = appId + INVITE_SALT;
+        const keyHash = await sha256(hashInput);
+
+        let siteUrl = window.location.href;
+        if (siteUrl.endsWith('admin.html')) {
+            siteUrl = siteUrl.replace('admin.html', 'worker.html');
+        } else {
+            siteUrl = siteUrl.substring(0, siteUrl.lastIndexOf('/') + 1) + 'worker.html';
+        }
+        
+        const inviteUrl = `${siteUrl}?invite=${appId}&key=${keyHash}`;
+        
+        if (inviteLinkInput) {
+            inviteLinkInput.value = inviteUrl;
+        }
+
+        if (inviteModal) {
+            inviteModal.classList.add('open');
+        }
+
+        toast(`Application approved for ${app.name}.`, 'success');
+        loadAllData();
+    };
+
+    window._adminRejectApplication = async function(idx) {
+        const apps = getApplications();
+        if (!apps[idx]) return;
+        apps[idx].status = 'rejected';
+        saveApplications(apps);
+        toast(`Application rejected for ${apps[idx].name}.`, 'error');
+        loadAllData();
+        await syncApplicationUpdate(apps[idx]);
+    };
+
+    const appsRefreshBtn = document.getElementById('apps-refresh-btn');
+    if (appsRefreshBtn) {
+        appsRefreshBtn.addEventListener('click', () => {
+            appsRefreshBtn.classList.add('spin');
+            if (isFirebaseActive) {
+                setupFirebaseListeners();
+            } else {
+                loadAllData();
+            }
+            setTimeout(() => appsRefreshBtn.classList.remove('spin'), 600);
+        });
+    }
+
+    /* =====================================================================
+       ANNOUNCEMENT MANAGEMENT
+       ===================================================================== */
+    function getAnnouncements() {
+        try { return JSON.parse(localStorage.getItem('client_announcements') || '[]'); } catch { return []; }
+    }
+    function saveAnnouncements(arr) {
+        localStorage.setItem('client_announcements', JSON.stringify(arr));
+    }
+
+    async function syncAnnouncementUpdate(ann) {
+        if (isFirebaseActive && db) {
+            try {
+                const { id, ...annData } = ann;
+                await db.collection('announcements').doc(id).set(annData);
+            } catch (err) {
+                console.error("Error syncing announcement to Firestore:", err);
+            }
+        }
+    }
+
+    async function syncAnnouncementDelete(id) {
+        if (isFirebaseActive && db) {
+            try {
+                await db.collection('announcements').doc(id).delete();
+            } catch (err) {
+                console.error("Error deleting announcement from Firestore:", err);
+            }
+        }
+    }
+
+    function renderAnnouncements() {
+        const listContainer = document.getElementById('announcements-list');
+        if (!listContainer) return;
+
+        const anns = getAnnouncements();
+        if (!anns.length) {
+            listContainer.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted); font-size:.82rem;">No announcements created yet.</div>';
+            return;
+        }
+
+        anns.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        listContainer.innerHTML = anns.map(a => {
+            const activeBadge = a.isActive ? '<span class="badge approved" style="padding:2px 6px; font-size:.6rem;">ACTIVE</span>' : '<span class="badge" style="background:rgba(255,255,255,.05); color:var(--muted); border:1px solid rgba(255,255,255,.1); padding:2px 6px; font-size:.6rem;">INACTIVE</span>';
+            const recruitmentLabel = a.isRecruitment ? '<span style="color:var(--gold); font-size:.7rem; font-weight:600; margin-left:8px;">[Recruitment]</span>' : '';
+            
+            const linkDesc = a.linkText ? `<div style="font-size:.72rem; color:var(--muted); margin-top:4px;">Button: <strong>${esc(a.linkText)}</strong> &rarr; <span style="font-family:var(--font-mono);">${esc(a.linkUrl)}</span></div>` : '';
+
+            return `
+                <div style="background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="flex:1; padding-right:12px;">
+                            <div style="font-size:.85rem; color:var(--text); line-height:1.4;">${esc(a.text)} ${recruitmentLabel}</div>
+                            ${linkDesc}
+                            <div style="font-size:.68rem; color:var(--muted); margin-top:6px;">Created: ${new Date(a.timestamp).toLocaleString('en-EG', { timeZone: 'Africa/Cairo' })}</div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            ${activeBadge}
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; border-top:1px solid rgba(255,255,255,.03); padding-top:10px; justify-content:flex-end;">
+                        <button class="btn-view" style="font-size:.68rem; padding:4px 8px; cursor:none;" onclick="window._adminToggleAnnouncementActive('${a.id}')">
+                            ${a.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button class="btn-reject" style="font-size:.68rem; padding:4px 8px; cursor:none;" onclick="window._adminDeleteAnnouncement('${a.id}')">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    window._adminToggleAnnouncementActive = async function(id) {
+        let anns = getAnnouncements();
+        const ann = anns.find(a => a.id === id);
+        if (!ann) return;
+
+        const newActiveState = !ann.isActive;
+
+        if (newActiveState) {
+            anns.forEach(a => {
+                if (a.id !== id && a.isActive) {
+                    a.isActive = false;
+                    syncAnnouncementUpdate(a);
+                }
+            });
+        }
+        ann.isActive = newActiveState;
+        saveAnnouncements(anns);
+        toast(ann.isActive ? 'Announcement banner activated.' : 'Announcement banner deactivated.', 'success');
+        loadAllData();
+        await syncAnnouncementUpdate(ann);
+    };
+
+    window._adminDeleteAnnouncement = async function(id) {
+        let anns = getAnnouncements();
+        anns = anns.filter(a => a.id !== id);
+        saveAnnouncements(anns);
+        toast('Announcement removed.', 'success');
+        loadAllData();
+        await syncAnnouncementDelete(id);
+    };
+
+    const annForm = document.getElementById('announcement-form');
+    if (annForm) {
+        annForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const text = document.getElementById('ann-text').value.trim();
+            const recruitmentCheckbox = document.getElementById('ann-recruitment');
+            const activeCheckbox = document.getElementById('ann-active');
+            
+            const isRecruitment = recruitmentCheckbox ? recruitmentCheckbox.checked : false;
+            
+            let linkText = document.getElementById('ann-link-text').value.trim();
+            let linkUrl = document.getElementById('ann-link-url').value.trim();
+
+            if (isRecruitment) {
+                linkUrl = '#apply';
+                if (!linkText) linkText = 'Apply Now';
+            }
+
+            const isActive = activeCheckbox ? activeCheckbox.checked : true;
+
+            const newAnn = {
+                id: 'ann_' + Date.now(),
+                text,
+                linkText,
+                linkUrl,
+                isActive,
+                isRecruitment,
+                timestamp: new Date().toISOString()
+            };
+
+            let anns = getAnnouncements();
+
+            if (isActive) {
+                anns.forEach(a => {
+                    if (a.isActive) {
+                        a.isActive = false;
+                        syncAnnouncementUpdate(a);
+                    }
+                });
+            }
+
+            anns.push(newAnn);
+            saveAnnouncements(anns);
+            toast('Announcement published successfully.', 'success');
+
+            annForm.reset();
+            const linkUrlEl = document.getElementById('ann-link-url');
+            if (linkUrlEl) {
+                linkUrlEl.disabled = false;
+                linkUrlEl.style.opacity = '1';
+            }
+            loadAllData();
+            await syncAnnouncementUpdate(newAnn);
+        });
+
+        const recruitmentCheckbox = document.getElementById('ann-recruitment');
+        if (recruitmentCheckbox) {
+            recruitmentCheckbox.addEventListener('change', () => {
+                const linkTextEl = document.getElementById('ann-link-text');
+                const linkUrlEl = document.getElementById('ann-link-url');
+                if (recruitmentCheckbox.checked) {
+                    if (linkTextEl && !linkTextEl.value) linkTextEl.value = 'Apply Now';
+                    if (linkUrlEl) {
+                        linkUrlEl.value = '#apply';
+                        linkUrlEl.disabled = true;
+                        linkUrlEl.style.opacity = '0.5';
+                    }
+                } else {
+                    if (linkUrlEl) {
+                        linkUrlEl.value = '';
+                        linkUrlEl.disabled = false;
+                        linkUrlEl.style.opacity = '1';
+                    }
+                }
+            });
+        }
+    }
 
 });

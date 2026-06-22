@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Systems & Visuals — Worker Portal</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        :root {
+            --bg-body: #0a0a0c;
+            --bg-card: #111115;
+            --border-color: rgba(255, 255, 255, 0.05);
+            --accent: #d4af37;
+            --accent-dim: rgba(212, 175, 55, 0.15);
+            --text-primary: #f4f4f6;
+            --text-muted: #888890;
+            --green: #2ecb71;
+            --red: #e74c3c;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Cursor */
+        #cur-dot {
+            width: 8px; height: 8px; background: var(--accent);
+            border-radius: 50%; position: fixed; transform: translate(-50%, -50%);
+            pointer-events: none; z-index: 10000; transition: width .2s, height .2s;
+        }
+        #cur-ring {
+            width: 26px; height: 26px; border: 1px solid rgba(212,175,55,.3);
+            border-radius: 50%; position: fixed; transform: translate(-50%, -50%);
+            pointer-events: none; z-index: 9999;
+        }
+        body.hovered #cur-dot { width: 4px; height: 4px; background: #fff; }
+        body.hovered #cur-ring { width: 36px; height: 36px; border-color: rgba(255,255,255,.4); background: rgba(255,255,255,.03); }
+
+        /* Decoy Lock Screen */
+        .portal-lock-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .portal-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .portal-eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+        }
+
+        .portal-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 0 0 10px 0;
+            letter-spacing: -0.02em;
+        }
+
+        .portal-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 28px;
+        }
+
+        /* Portal Dashboard Layout */
+        .dashboard-container {
+            display: none;
+            padding: 40px 60px;
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        .dash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 24px;
+            margin-bottom: 40px;
+        }
+
+        .dash-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+        }
+
+        .dash-sub {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin: 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 24px;
+        }
+
+        .stat-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .stat-value.gold { color: var(--accent); }
+
+        .dashboard-main {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 32px;
+        }
+
+        .card-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0 0 20px 0;
+            letter-spacing: -0.01em;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
+        /* Project Cards */
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .project-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .project-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .project-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .project-price {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent);
+        }
+
+        .project-brief {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .project-commission {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px 14px;
+            font-size: 0.8rem;
+        }
+
+        .commission-amt {
+            font-weight: 700;
+            color: var(--green);
+        }
+
+        /* Decoy lock error */
+        .lock-error {
+            color: var(--red);
+            font-size: 0.75rem;
+            margin-top: 10px;
+            display: none;
+        }
+        .lock-error.show { display: block; }
+
+        .btn-logout {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.8rem;
+            cursor: none;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="cur-dot"></div>
+    <div id="cur-ring"></div>
+    <div class="grid-bg"></div>
+
+    <!-- ========== LOGIN / SIGNUP SCREEN ========== -->
+    <div class="portal-lock-container" id="portal-lock">
+        <div class="portal-card">
+            <div class="portal-eyebrow" id="lock-eyebrow">Worker Portal</div>
+            
+            <!-- Decoy Login Form -->
+            <div id="login-form-wrapper">
+                <h1 class="portal-title">Sign In</h1>
+                <p class="portal-sub">Access your developer dashboard to manage assigned projects and view earnings.</p>
+                
+                <form id="portal-login-form" class="checkout-form">
+                    <div class="form-group">
+                        <label for="login-email">Email Address</label>
+                        <input type="email" id="login-email" required placeholder="e.g. john@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required placeholder="Security key...">
+                    </div>
+                    <button type="submit" class="checkout-submit-btn" style="width: 100%; margin-top: 10px;">Sign In</button>
+                    <div class="lock-error" id="login-error">Invalid credentials. Access denied.</div>
+                </form>
+            </div>
+
+            <!-- Secured Signup Form (Injected dynamically if invite code is validated) -->
+            <div id="signup-form-wrapper" style="display: none;">
+                <h1 class="portal-title">Setup Account</h1>
+                <p class="portal-sub">Congratulations! Your application has been approved. Set up your password below to claim your account.</p>
+                
+                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 14px; margin-bottom: 20px;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 2px;">Name</div>
+                    <div style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);" id="su-name">—</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; margin-bottom: 2px;">Email</div>
+                    <div style="font-weight: 600; font-size: 0.88rem; color: var(--text-primary);" id="su-email">—</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; margin-bottom: 2px;">Role</div>
+                    <div style="font-weight: 600; font-size: 0.88rem; color: var(--accent);" id="su-major">—</div>
+                </div>
+
+                <form id="portal-signup-form" class="checkout-form">
+                    <input type="hidden" id="su-appid">
+                    <div class="form-group">
+                        <label for="su-password">Create Password</label>
+                        <input type="password" id="su-password" required placeholder="Choose a password..." minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="su-password-confirm">Confirm Password</label>
+                        <input type="password" id="su-password-confirm" required placeholder="Confirm your password...">
+                    </div>
+                    <button type="submit" class="checkout-submit-btn" style="width: 100%; margin-top: 10px;">Register Account</button>
+                    <div class="lock-error" id="signup-error">Passwords do not match. Try again.</div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== WORKER DASHBOARD ========== -->
+    <div class="dashboard-container" id="portal-dash">
+        <div class="dash-header">
+            <div>
+                <h1 class="dash-title" id="dash-title">Developer Dashboard</h1>
+                <p class="dash-sub" id="dash-role">Web Developer — Active Member</p>
+            </div>
+            <button class="btn-logout" id="logout-btn">Log Out</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Project Commission</div>
+                <div class="stat-value gold">15%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Assigned Projects</div>
+                <div class="stat-value" id="stat-count">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Commission Earned</div>
+                <div class="stat-value" id="stat-earnings" style="color: var(--green);">0 EGP</div>
+            </div>
+        </div>
+
+        <div class="dashboard-main">
+            <!-- Project Queue -->
+            <div>
+                <h2 class="card-title">Assigned Projects</h2>
+                <div class="project-list" id="project-list-container">
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">No projects assigned to you yet.</p>
+                </div>
+            </div>
+
+            <!-- Guidelines & Instructions -->
+            <div>
+                <h2 class="card-title">Guidelines & Rules</h2>
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; padding: 24px; display: flex; flex-direction: column; gap: 14px;">
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <span style="color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: bold; margin-top: 2px;">01.</span>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+                            You receive a <strong style="color: var(--accent);">15% commission</strong> of the gross price of each project assigned to you.
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <span style="color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: bold; margin-top: 2px;">02.</span>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+                            Earnings are credited when the client's payment is fully verified by the administrator and the project status is marked <strong style="color: var(--green);">Completed</strong>.
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <span style="color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: bold; margin-top: 2px;">03.</span>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+                            Ensure visual excellence: follow the **Obsidian dark theme** palette (gold accent highlights `#d4af37` on dark bodies).
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <span style="color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: bold; margin-top: 2px;">04.</span>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+                            Keep visual assets compressed, use GPU-accelerated translate transitions for custom cursors, and avoid layout-reflow performance hits.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast Element -->
+    <div id="toast-container" style="position: fixed; bottom: 28px; right: 28px; display: flex; flex-direction: column-reverse; gap: 10px; z-index: 8000;"></div>
+
+    <script>
+        /* =====================================================================
+           CURSOR
+        ===================================================================== */
+        const curDot  = document.getElementById('cur-dot');
+        const curRing = document.getElementById('cur-ring');
+        let mx = 0, my = 0, rx = 0, ry = 0;
+
+        document.addEventListener('mousemove', e => {
+            mx = e.clientX; my = e.clientY;
+            if (curDot) { curDot.style.left = `${mx}px`; curDot.style.top = `${my}px`; }
+        });
+
+        (function animRing() {
+            rx += (mx - rx) / 8;
+            ry += (my - ry) / 8;
+            if (curRing) { curRing.style.left = `${rx}px`; curRing.style.top = `${ry}px`; }
+            requestAnimationFrame(animRing);
+        })();
+
+        function bindHover() {
+            document.querySelectorAll('a, button, input, select, textarea').forEach(el => {
+                el.addEventListener('mouseenter', () => document.body.classList.add('hovered'));
+                el.addEventListener('mouseleave', () => document.body.classList.remove('hovered'));
+            });
+        }
+        bindHover();
+
+        /* =====================================================================
+           TOAST
+        ===================================================================== */
+        function toast(msg, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.innerHTML = `<span class="toast-dot" style="background:${type === 'success' ? 'var(--green)' : type === 'error' ? 'var(--red)' : 'var(--accent)'}; width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:8px;"></span><span>${msg}</span>`;
+            container.appendChild(el);
+            setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .4s'; }, 3200);
+            setTimeout(() => el.remove(), 3600);
+        }
+
+        /* =====================================================================
+           FIREBASE CONFIGURATION & SYNCHRONIZATION
+        ===================================================================== */
+        const FIREBASE_CONFIG = {
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
+        };
+
+        let db = null;
+        let isFirebaseActive = false;
+
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        async function initFirebase() {
+            if (!FIREBASE_CONFIG.apiKey) {
+                console.log("Firebase config not found for worker portal. Falling back to LocalStorage.");
+                initWorkerDashboard();
+                return false;
+            }
+            try {
+                await loadScript("https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js");
+                await loadScript("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js");
+                
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(FIREBASE_CONFIG);
+                }
+                db = firebase.firestore();
+                isFirebaseActive = true;
+                console.log("Firebase Firestore initialized on worker portal.");
+                
+                setupFirebaseListeners();
+                return true;
+            } catch (e) {
+                console.error("Failed to initialize Firebase on worker portal:", e);
+                initWorkerDashboard();
+                return false;
+            }
+        }
+
+        function setupFirebaseListeners() {
+            if (!db) return;
+            const email = sessionStorage.getItem('workerEmail');
+            if (!email) return;
+
+            // Listen to orders
+            db.collection('orders').where('assignedWorkerEmail', '==', email).onSnapshot(snapshot => {
+                let orders = [];
+                snapshot.forEach(doc => {
+                    orders.push({ id: doc.id, ...doc.data() });
+                });
+                localStorage.setItem('client_orders', JSON.stringify(orders));
+                renderWorkerData();
+            }, err => {
+                console.error("Firebase Orders Sync Error:", err);
+                renderWorkerData();
+            });
+
+            // Listen to workers
+            db.collection('workers').doc('work_' + email.replace(/\./g, '_')).onSnapshot(doc => {
+                if (doc.exists) {
+                    localStorage.setItem('active_worker_profile', JSON.stringify({ id: doc.id, ...doc.data() }));
+                    renderWorkerData();
+                }
+            });
+        }
+
+        /* =====================================================================
+           WORKER SECURITY & AUTH LAYER
+        ===================================================================== */
+        const INVITE_SALT = "WORKER_PORTAL_INVITE_2026";
+        const SIGNUP_SALT = "WORKER_PORTAL_SIGNUP_2026";
+
+        async function sha256(str, salt) {
+            const data = new TextEncoder().encode(str + salt);
+            const buf  = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // HTML Sanitizer
+        function esc(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Validate Invite link and reveal signup
+        async function validateInvite() {
+            const params = new URLSearchParams(window.location.search);
+            const inviteAppId = params.get('invite');
+            const keyHash = params.get('key');
+
+            if (!inviteAppId || !keyHash) {
+                // Stay in standard decoy login mode
+                return;
+            }
+
+            // Verify Key Signature
+            const calculatedHash = await sha256(inviteAppId, INVITE_SALT);
+            if (calculatedHash !== keyHash) {
+                toast('Invalid invitation link. Security access denied.', 'error');
+                return;
+            }
+
+            // Find applicant data to pre-populate
+            let apps = [];
+            try { apps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
+            let app = apps.find(a => a.id === inviteAppId);
+
+            if (!app && FIREBASE_CONFIG.apiKey) {
+                // Try fetching from Firestore if fallback is active
+                try {
+                    await initFirebase();
+                    const doc = await db.collection('applications').doc(inviteAppId).get();
+                    if (doc.exists) app = { id: doc.id, ...doc.data() };
+                } catch (e) {
+                    console.error("Error fetching applicant from firestore:", e);
+                }
+            }
+
+            if (!app) {
+                toast('Application details not found. Registration locked.', 'error');
+                return;
+            }
+
+            if (app.status !== 'approved') {
+                toast('This application is not approved.', 'error');
+                return;
+            }
+
+            // Verify if already registered
+            let workers = [];
+            try { workers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
+            let existingWorker = workers.find(w => w.email === app.email);
+            if (existingWorker) {
+                toast('Account already registered. Please sign in.', 'info');
+                return;
+            }
+
+            // Reveal Signup Form
+            document.getElementById('login-form-wrapper').style.display = 'none';
+            document.getElementById('signup-form-wrapper').style.display = 'block';
+            document.getElementById('lock-eyebrow').textContent = "Create Account";
+            
+            document.getElementById('su-name').textContent = app.name;
+            document.getElementById('su-email').textContent = app.email;
+            document.getElementById('su-major').textContent = app.major;
+            document.getElementById('su-appid').value = app.id;
+            
+            bindHover();
+        }
+
+        // Register Account
+        const signupForm = document.getElementById('portal-signup-form');
+        if (signupForm) {
+            signupForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const pass = document.getElementById('su-password').value;
+                const passConf = document.getElementById('su-password-confirm').value;
+                const errorEl = document.getElementById('signup-error');
+
+                if (pass !== passConf) {
+                    errorEl.classList.add('show');
+                    return;
+                }
+                errorEl.classList.remove('show');
+
+                const appId = document.getElementById('su-appid').value;
+                
+                // Fetch app data again
+                let apps = [];
+                try { apps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
+                let app = apps.find(a => a.id === appId);
+
+                if (!app && isFirebaseActive) {
+                    const doc = await db.collection('applications').doc(appId).get();
+                    if (doc.exists) app = { id: doc.id, ...doc.data() };
+                }
+
+                if (!app) {
+                    toast('Registration error: application data missing.', 'error');
+                    return;
+                }
+
+                // Create Password hash
+                const passHash = await sha256(pass, app.email + SIGNUP_SALT);
+
+                const newWorker = {
+                    id: 'work_' + app.email.replace(/\./g, '_'),
+                    name: app.name,
+                    email: app.email,
+                    major: app.major,
+                    passwordHash: passHash,
+                    joinedAt: new Date().toISOString()
+                };
+
+                // Save Worker locally
+                let localWorkers = [];
+                try { localWorkers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
+                localWorkers.push(newWorker);
+                localStorage.setItem('client_workers', JSON.stringify(localWorkers));
+
+                // Save Worker to firestore
+                if (isFirebaseActive && db) {
+                    try {
+                        const { id, ...workerData } = newWorker;
+                        await db.collection('workers').doc(id).set(workerData);
+                    } catch (err) {
+                        console.error("Error syncing worker to Firestore:", err);
+                    }
+                }
+
+                toast('Account setup successful! You can now log in.', 'success');
+                setTimeout(() => {
+                    // Redirect to login (clean query params)
+                    window.location.href = window.location.pathname;
+                }, 2000);
+            });
+        }
+
+        // Sign In
+        const loginForm = document.getElementById('portal-login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value.trim();
+                const pass = document.getElementById('login-password').value;
+                const errorEl = document.getElementById('login-error');
+
+                // Find worker
+                let workers = [];
+                try { workers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
+                let worker = workers.find(w => w.email === email);
+
+                if (!worker && FIREBASE_CONFIG.apiKey) {
+                    // Fetch worker from Firestore
+                    try {
+                        await initFirebase();
+                        const doc = await db.collection('workers').doc('work_' + email.replace(/\./g, '_')).get();
+                        if (doc.exists) {
+                            worker = { id: doc.id, ...doc.data() };
+                        }
+                    } catch (err) {
+                        console.error("Firestore worker fetch error:", err);
+                    }
+                }
+
+                if (!worker) {
+                    errorEl.classList.add('show');
+                    return;
+                }
+
+                const hashAttempt = await sha256(pass, email + SIGNUP_SALT);
+                if (hashAttempt !== worker.passwordHash) {
+                    errorEl.classList.add('show');
+                    return;
+                }
+
+                errorEl.classList.remove('show');
+                
+                // Login Success
+                sessionStorage.setItem('workerOk', '1');
+                sessionStorage.setItem('workerEmail', email);
+                localStorage.setItem('active_worker_profile', JSON.stringify(worker));
+                
+                toast(`Welcome back, ${worker.name}!`, 'success');
+                
+                setTimeout(() => {
+                    document.getElementById('portal-lock').style.display = 'none';
+                    document.getElementById('portal-dash').style.display = 'block';
+                    initFirebase(); // start firebase listeners for assigned orders
+                }, 500);
+            });
+        }
+
+        // Auto-reauth
+        function initWorkerDashboard() {
+            if (sessionStorage.getItem('workerOk') === '1') {
+                document.getElementById('portal-lock').style.display = 'none';
+                document.getElementById('portal-dash').style.display = 'block';
+                renderWorkerData();
+            }
+        }
+
+        // Render Dashboard data
+        function renderWorkerData() {
+            const profile = JSON.parse(localStorage.getItem('active_worker_profile') || '{}');
+            if (!profile.email) return;
+
+            document.getElementById('dash-title').textContent = `Welcome, ${profile.name}!`;
+            document.getElementById('dash-role').textContent = `${profile.major} — Active Member`;
+
+            // Load assigned projects
+            let orders = [];
+            try { orders = JSON.parse(localStorage.getItem('client_orders') || '[]'); } catch {}
+            
+            // Filter assigned orders
+            const assignedOrders = orders.filter(o => o.assignedWorkerEmail === profile.email);
+            
+            const container = document.getElementById('project-list-container');
+            
+            document.getElementById('stat-count').textContent = assignedOrders.length;
+            
+            // Calculate earnings: 15% of all COMPLETED assigned orders
+            let totalEarnings = 0;
+            const completedAssigned = assignedOrders.filter(o => o.status === 'completed' || o.status === 'approved'); // completed order has status completed or approved
+
+            completedAssigned.forEach(o => {
+                const priceNum = parseFloat(o.price.replace(/[^\d.]/g, '')) || 0;
+                totalEarnings += priceNum * 0.15;
+            });
+            document.getElementById('stat-earnings').textContent = `${totalEarnings.toLocaleString('en-EG')} EGP`;
+
+            if (!assignedOrders.length) {
+                container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; padding: 24px; text-align: center; background: rgba(255,255,255,.01); border: 1px dashed var(--border-color); border-radius: 6px;">No projects currently assigned to you.</p>';
+                return;
+            }
+
+            container.innerHTML = assignedOrders.map((o, idx) => {
+                const priceNum = parseFloat(o.price.replace(/[^\d.]/g, '')) || 0;
+                const commission = (priceNum * 0.15).toLocaleString('en-EG');
+                
+                let statusLabel = `<span class="badge pending">Assigned</span>`;
+                let actionBtn = `<button class="btn-logout" onclick="window._workerCompleteProject('${o.id}')" style="cursor:none; font-size:.7rem; padding:6px 12px; margin-top:8px;">Mark Project Completed</button>`;
+                
+                if (o.status === 'completed' || o.status === 'approved') {
+                    statusLabel = `<span class="badge approved">Completed</span>`;
+                    actionBtn = '';
+                } else if (o.status === 'rejected') {
+                    statusLabel = `<span class="badge rejected">Cancelled</span>`;
+                    actionBtn = '';
+                }
+
+                return `
+                    <div class="project-card">
+                        <div class="project-meta">
+                            <span class="project-name">${esc(o.plan)}</span>
+                            <span class="project-price">${esc(o.price)}</span>
+                        </div>
+                        <div style="font-size:.75rem; color:var(--text-muted);">Client: <strong>${esc(o.name)}</strong> (${esc(o.email)})</div>
+                        <div class="project-brief">${esc(o.brief || o.projectBrief || 'No brief provided.')}</div>
+                        <div class="project-commission">
+                            <span>Your 15% commission:</span>
+                            <span class="commission-amt">${commission} EGP</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                            ${statusLabel}
+                            ${actionBtn}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            bindHover();
+        }
+
+        // Complete project
+        window._workerCompleteProject = async function(orderId) {
+            let orders = [];
+            try { orders = JSON.parse(localStorage.getItem('client_orders') || '[]'); } catch {}
+            const idx = orders.findIndex(o => o.id === orderId);
+            if (idx !== -1) {
+                orders[idx].status = 'completed';
+                orders[idx].completedAt = new Date().toISOString();
+                localStorage.setItem('client_orders', JSON.stringify(orders));
+                toast('Project marked as completed! Commission earned.', 'success');
+                renderWorkerData();
+                
+                // Sync to Firestore
+                if (isFirebaseActive && db) {
+                    try {
+                        await db.collection('orders').doc(orderId).update({ 
+                            status: 'completed',
+                            completedAt: new Date().toISOString()
+                        });
+                    } catch (err) {
+                        console.error("Firestore complete project sync error:", err);
+                    }
+                }
+            }
+        };
+
+        // Log out
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                sessionStorage.removeItem('workerOk');
+                sessionStorage.removeItem('workerEmail');
+                localStorage.removeItem('active_worker_profile');
+                window.location.href = window.location.pathname; // refresh page to decoy screen
+            });
+        }
+
+        // Page loader lifecycle
+        window.addEventListener('load', async () => {
+            await validateInvite();
+            initWorkerDashboard();
+        });
+
+    </script>
+</body>
+</html>

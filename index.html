@@ -82,6 +82,16 @@
     </div>
 
 
+    <!-- Announcement Banner -->
+    <div class="announcement-banner" id="announcement-banner" style="display: none;">
+        <div class="banner-content">
+            <span class="banner-badge">Hiring</span>
+            <span class="banner-text" id="banner-text">We are looking for talented developers and designers. Join the team!</span>
+            <a href="#" class="banner-link" id="banner-action-btn">Apply Now &rarr;</a>
+        </div>
+        <button class="banner-close-btn" id="close-banner" aria-label="Dismiss announcement">&times;</button>
+    </div>
+
     <!-- Navigation Header -->
     <header class="site-header">
         <div class="logo-container">
@@ -95,6 +105,7 @@
                 <li><a href="#experience" class="nav-link magnetic" data-dist="10"><span class="nav-num">04</span> Experience</a></li>
                 <li><a href="#contact" class="nav-link magnetic" data-dist="10"><span class="nav-num">05</span> Contact</a></li>
                 <li><a href="#" id="menu-policies-btn" class="nav-link magnetic" data-dist="10"><span class="nav-num">06</span> Policies</a></li>
+                <li><a href="#" id="menu-apply-btn" class="nav-link magnetic" data-dist="10"><span class="nav-num">07</span> Careers</a></li>
             </ul>
         </nav>
         <!-- Hamburger (visible on mobile only) -->
@@ -930,6 +941,78 @@
                     </p>
                 </section>
             </div>
+        </div>
+    </div>
+
+    <!-- Recruitment Apply Modal Overlay -->
+    <div class="checkout-modal-overlay" id="apply-modal">
+        <div class="checkout-modal-card" style="max-width: 560px;">
+            <button class="checkout-close-btn" id="close-apply">&times;</button>
+            <h2 class="checkout-title" style="margin-bottom: 5px;">Work With Me</h2>
+            <p class="checkout-sub" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 25px;">Submit your details, select your major, and answer our technical challenges to apply. <strong style="color:var(--accent);">Accepted team members earn 15% commission on each completed project assigned to them.</strong></p>
+            
+            <form id="apply-form" class="checkout-form">
+                <div class="form-group">
+                    <label for="apply-name">Your Full Name</label>
+                    <input type="text" id="apply-name" required placeholder="e.g. Jane Doe">
+                </div>
+                
+                <div class="form-group">
+                    <label for="apply-email">Email Address</label>
+                    <input type="email" id="apply-email" required placeholder="e.g. jane@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="apply-major">Selected Major / Role</label>
+                    <select id="apply-major" required style="width: 100%; padding: 14px; background: var(--bg-body); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-family: inherit; font-size: 0.88rem; outline: none; cursor: none;">
+                        <option value="" disabled selected>Choose your area of expertise...</option>
+                        <option value="Graphic Designer">Graphic Designer</option>
+                        <option value="Web Developer">Web Developer</option>
+                        <option value="Programs Developer">Programs Developer</option>
+                    </select>
+                </div>
+
+                <!-- Dynamic Skills Section -->
+                <div class="form-group hidden" id="apply-skills-section">
+                    <label>Select Your Skills</label>
+                    <div class="skills-checkbox-grid" id="apply-skills-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+                        <!-- Checkboxes injected dynamically -->
+                    </div>
+                </div>
+
+                <!-- Dynamic Technical Questions Section -->
+                <div class="form-group hidden" id="apply-questions-section">
+                    <label style="margin-bottom: 12px; display: block; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Technical Challenges</label>
+                    <div id="apply-questions-container">
+                        <!-- Questions injected dynamically -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="apply-website">Personal Website / Portfolio (Optional)</label>
+                    <input type="url" id="apply-website" placeholder="e.g. https://myportfolio.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="apply-github">GitHub / Behance / Social Profile (Optional)</label>
+                    <input type="url" id="apply-github" placeholder="e.g. https://github.com/myusername">
+                </div>
+
+                <div class="form-group">
+                    <label for="apply-cv">Upload CV (PDF or Image, max 800KB)</label>
+                    <input type="file" id="apply-cv" accept=".pdf,image/*" required style="padding: 10px 0; border: none; font-size: 0.85rem; color: var(--text-muted); background: transparent;">
+                    <small style="display: block; margin-top: 4px; font-size: 0.72rem; color: var(--text-muted);">Strictly under 800KB to allow secure database storage.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="apply-contribution">How do you plan to contribute / collaborate?</label>
+                    <textarea id="apply-contribution" rows="3" required placeholder="Describe what projects you want to work on and how we can collaborate..."></textarea>
+                </div>
+
+                <button type="submit" class="checkout-submit-btn" id="apply-submit-btn" style="margin-top: 15px; width: 100%;">
+                    <span>Submit Application</span>
+                </button>
+            </form>
         </div>
     </div>
 
