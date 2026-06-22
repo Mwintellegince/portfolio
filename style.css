@@ -2728,8 +2728,9 @@ body.terminal-theme .seq-pad.active.playing {
 
 .plans-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    justify-content: center;
 }
 
 .plan-card {
