@@ -3021,7 +3021,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const email = currentUser.email.toLowerCase();
+        const email = currentUser.email ? currentUser.email.toLowerCase() : '';
+        if (!email) {
+            showNotification("Your account is missing an email address. Please update your profile.", "error");
+            return;
+        }
 
         // Check if they are already an active worker
         let isWorker = false;

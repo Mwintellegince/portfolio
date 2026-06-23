@@ -200,6 +200,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function sha256WithSalt(str, salt) {
+        if (!crypto || !crypto.subtle) {
+            let hash = 0;
+            const combined = str + salt;
+            for (let i = 0; i < combined.length; i++) {
+                const char = combined.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return Math.abs(hash).toString(16).padStart(16, '0');
+        }
         const data = new TextEncoder().encode(str + salt);
         const buf  = await crypto.subtle.digest('SHA-256', data);
         return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -1071,7 +1081,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const tempPassword = `WORKER-${rand}`;
 
-        const lowerEmail = app.email.toLowerCase();
+        const lowerEmail = app.email ? app.email.toLowerCase() : '';
+        if (!lowerEmail) {
+            toast('Application is missing an email address!', 'error');
+            return;
+        }
         // Create password hash using the SIGNUP_SALT
         const tempPassHash = await sha256WithSalt(tempPassword, lowerEmail + SIGNUP_SALT);
 

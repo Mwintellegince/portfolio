@@ -611,6 +611,16 @@
         const SIGNUP_SALT = "WORKER_PORTAL_SIGNUP_2026";
 
         async function sha256(str, salt) {
+            if (!crypto || !crypto.subtle) {
+                let hash = 0;
+                const combined = str + salt;
+                for (let i = 0; i < combined.length; i++) {
+                    const char = combined.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return Math.abs(hash).toString(16).padStart(16, '0');
+            }
             const data = new TextEncoder().encode(str + salt);
             const buf  = await crypto.subtle.digest('SHA-256', data);
             return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
