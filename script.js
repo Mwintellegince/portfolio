@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Save to local client_users array for local sync / admin access
                             let localUsers = [];
                             try { localUsers = JSON.parse(localStorage.getItem('client_users') || '[]'); } catch {}
-                            if (!localUsers.some(u => u.email === userData.email)) {
+                            if (!localUsers.some(u => u.email && userData.email && u.email.toLowerCase() === userData.email.toLowerCase())) {
                                 localUsers.push({
                                     displayName: userData.displayName,
                                     email: userData.email,
@@ -363,7 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Save to local client_users array for local sync / admin access
                         let localUsers = [];
                         try { localUsers = JSON.parse(localStorage.getItem('client_users') || '[]'); } catch {}
-                        if (!localUsers.some(u => u.email === fallbackUser.email)) {
+                        if (!localUsers.some(u => u.email && fallbackUser.email && u.email.toLowerCase() === fallbackUser.email.toLowerCase())) {
                             localUsers.push({
                                 displayName: fallbackUser.displayName,
                                 email: fallbackUser.email,
@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (signinForm) {
         signinForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('signin-email').value.trim();
+            const email = document.getElementById('signin-email').value.trim().toLowerCase();
             const password = document.getElementById('signin-password').value;
 
             if (isFirebaseActive) {
@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let localUsers = [];
                 try { localUsers = JSON.parse(localStorage.getItem('client_users') || '[]'); } catch {}
                 const passHash = await sha256(password);
-                const user = localUsers.find(u => u.email === email && u.passwordHash === passHash);
+                const user = localUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase() && u.passwordHash === passHash);
                 if (user) {
                     const loggedInUser = {
                         uid: 'usr_' + Date.now(),
@@ -477,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('signup-name').value.trim();
-            const email = document.getElementById('signup-email').value.trim();
+            const email = document.getElementById('signup-email').value.trim().toLowerCase();
             const password = document.getElementById('signup-password').value;
 
             if (password.length < 6) {
@@ -525,7 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // LocalStorage Fallback
                 let localUsers = [];
                 try { localUsers = JSON.parse(localStorage.getItem('client_users') || '[]'); } catch {}
-                if (localUsers.some(u => u.email === email)) {
+                if (localUsers.some(u => u.email && u.email.toLowerCase() === email.toLowerCase())) {
                     showAuthStatus("Account already exists with this email.", "warn");
                     return;
                 }
@@ -646,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (profileWorkerBtn) {
         profileWorkerBtn.addEventListener('click', async () => {
             if (!currentUser) return;
-            const email = currentUser.email;
+            const email = currentUser.email.toLowerCase();
 
             // Check if worker exists in workers database
             let isWorker = false;
@@ -665,7 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 let localWorkers = [];
                 try { localWorkers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
-                const localW = localWorkers.find(w => w.email === email);
+                const localW = localWorkers.find(w => w.email && w.email.toLowerCase() === email);
                 if (localW) {
                     isWorker = true;
                     workerObj = localW;
@@ -711,7 +711,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Render orders list
         if (isFirebaseActive && db) {
             userOrdersListener = db.collection('orders')
-                .where('email', '==', currentUser.email)
+                .where('email', '==', currentUser.email.toLowerCase())
                 .onSnapshot((snapshot) => {
                     let orders = [];
                     snapshot.forEach(doc => {
@@ -731,7 +731,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Render applications list
         if (isFirebaseActive && db) {
             userAppsListener = db.collection('applications')
-                .where('email', '==', currentUser.email)
+                .where('email', '==', currentUser.email.toLowerCase())
                 .onSnapshot((snapshot) => {
                     let apps = [];
                     snapshot.forEach(doc => {
@@ -751,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayLocalUserOrders() {
         let localOrders = [];
         try { localOrders = JSON.parse(localStorage.getItem('client_orders') || '[]'); } catch {}
-        const filtered = localOrders.filter(o => o.email === currentUser.email);
+        const filtered = localOrders.filter(o => o.email && currentUser.email && o.email.toLowerCase() === currentUser.email.toLowerCase());
         filtered.sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
         displayUserOrders(filtered);
     }
@@ -839,7 +839,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayLocalUserApplications() {
         let localApps = [];
         try { localApps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
-        const filtered = localApps.filter(a => a.email === currentUser.email);
+        const filtered = localApps.filter(a => a.email && currentUser.email && a.email.toLowerCase() === currentUser.email.toLowerCase());
         filtered.sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
         displayUserApplications(filtered);
     }
@@ -2351,7 +2351,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const planName   = checkoutPlanNameInput.value;
             const price      = parseInt(checkoutPlanPriceInput.value);
             const clientName  = document.getElementById('client-name').value.trim();
-            const clientEmail = document.getElementById('client-email').value.trim();
+            const clientEmail = document.getElementById('client-email').value.trim().toLowerCase();
             const clientBrief = document.getElementById('client-brief').value.trim();
 
             // ── KASHIER CARD FLOW ──
@@ -2982,7 +2982,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check if user already applied
         let existingApps = [];
         try { existingApps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
-        const userApp = existingApps.find(a => a.email === currentUser.email && (a.status === 'pending' || a.status === 'approved'));
+        const userApp = existingApps.find(a => a.email && currentUser.email && a.email.toLowerCase() === currentUser.email.toLowerCase() && (a.status === 'pending' || a.status === 'approved'));
         if (userApp) {
             const statusMsg = userApp.status === 'approved'
                 ? 'You have already been accepted as a team member. Check your profile for next steps.'
@@ -3109,7 +3109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const name = document.getElementById('apply-name').value.trim();
-                const email = document.getElementById('apply-email').value.trim();
+                const email = document.getElementById('apply-email').value.trim().toLowerCase();
                 const major = applyMajorSelect.value;
                 const website = document.getElementById('apply-website').value.trim();
                 const github = document.getElementById('apply-github').value.trim();

@@ -723,7 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 orders[idx].assignedWorkerEmail = selectedEmail;
                 saveOrders(orders);
                 if (selectedEmail) {
-                    const worker = workers.find(w => w.email === selectedEmail);
+                    const worker = workers.find(w => w.email && w.email.toLowerCase() === selectedEmail.toLowerCase());
                     toast(`Order assigned to ${worker ? worker.name : selectedEmail}.`, 'success');
                 } else {
                     toast('Order unassigned.', 'info');
@@ -1071,15 +1071,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const tempPassword = `WORKER-${rand}`;
 
+        const lowerEmail = app.email.toLowerCase();
         // Create password hash using the SIGNUP_SALT
-        const tempPassHash = await sha256WithSalt(tempPassword, app.email + SIGNUP_SALT);
+        const tempPassHash = await sha256WithSalt(tempPassword, lowerEmail + SIGNUP_SALT);
 
         // Create new worker profile
-        const workerId = 'work_' + app.email.replace(/\./g, '_');
+        const workerId = 'work_' + lowerEmail.replace(/\./g, '_');
         const newWorker = {
             id: workerId,
             name: app.name,
-            email: app.email,
+            email: lowerEmail,
             major: app.major,
             passwordHash: tempPassHash,
             joinedAt: new Date().toISOString(),
@@ -1088,7 +1089,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Save worker profile locally
         let localWorkers = getWorkers();
-        const wIdx = localWorkers.findIndex(w => w.email === app.email);
+        const wIdx = localWorkers.findIndex(w => w.email && w.email.toLowerCase() === lowerEmail);
         if (wIdx !== -1) {
             localWorkers[wIdx] = newWorker;
         } else {
@@ -1485,7 +1486,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const w = workers[_editWorkerIdx];
             if (!w) return;
             w.name = document.getElementById('wm-name').value.trim() || w.name;
-            w.email = document.getElementById('wm-email').value.trim() || w.email;
+            w.email = (document.getElementById('wm-email').value.trim() || w.email).toLowerCase();
             w.major = document.getElementById('wm-major').value.trim() || w.major;
             saveWorkers(workers);
             toast('Worker updated successfully.', 'success');
@@ -1527,12 +1528,12 @@ document.addEventListener('DOMContentLoaded', () => {
         addWorkerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('add-worker-name').value.trim();
-            const email = document.getElementById('add-worker-email').value.trim();
+            const email = document.getElementById('add-worker-email').value.trim().toLowerCase();
             const major = document.getElementById('add-worker-major').value.trim();
             const password = document.getElementById('add-worker-password').value.trim();
             if (!name || !email || !major || !password) { toast('Please fill all fields.', 'error'); return; }
             const workers = getWorkers();
-            if (workers.some(w => w.email === email)) { toast('A worker with this email already exists.', 'error'); return; }
+            if (workers.some(w => w.email && w.email.toLowerCase() === email)) { toast('A worker with this email already exists.', 'error'); return; }
             const workerId = 'work_' + email.replace(/\./g, '_');
             const passHash = await sha256WithSalt(password, email + 'WORKER_PORTAL_SIGNUP_2026');
             const newWorker = {

@@ -332,6 +332,12 @@
                 
                 <form id="portal-setup-form" class="checkout-form">
                     <input type="hidden" id="su-email">
+                    <input type="hidden" id="su-appid">
+                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.6;">
+                        <div style="color: var(--text-muted);">Name: <strong id="su-name" style="color: var(--text);"></strong></div>
+                        <div style="color: var(--text-muted);">Email: <strong id="su-email-text" style="color: var(--text);"></strong></div>
+                        <div style="color: var(--text-muted);">Major: <strong id="su-major" style="color: var(--text);"></strong></div>
+                    </div>
                     <div class="form-group">
                         <label for="su-password">New Permanent Password</label>
                         <input type="password" id="su-password" required placeholder="Choose a secure password..." minlength="6">
@@ -555,7 +561,8 @@
 
         function setupFirebaseListeners() {
             if (!db) return;
-            const email = sessionStorage.getItem('workerEmail');
+            let email = sessionStorage.getItem('workerEmail');
+            if (email) email = email.toLowerCase();
             if (!email) return;
 
             // Listen to all orders (pool and help requests need visibility over all orders)
@@ -645,7 +652,7 @@
             // Verify if already registered
             let workers = [];
             try { workers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
-            let existingWorker = workers.find(w => w.email === app.email);
+            let existingWorker = workers.find(w => w.email && w.email.toLowerCase() === app.email.toLowerCase());
             if (existingWorker) {
                 toast('Account already registered. Please sign in.', 'info');
                 return;
@@ -657,7 +664,9 @@
             document.getElementById('lock-eyebrow').textContent = "Create Account";
             
             document.getElementById('su-name').textContent = app.name;
-            document.getElementById('su-email').textContent = app.email;
+            document.getElementById('su-email').value = app.email.toLowerCase();
+            const suEmailText = document.getElementById('su-email-text');
+            if (suEmailText) suEmailText.textContent = app.email.toLowerCase();
             document.getElementById('su-major').textContent = app.major;
             document.getElementById('su-appid').value = app.id;
             
@@ -669,7 +678,7 @@
         if (setupForm) {
             setupForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const email = document.getElementById('su-email').value;
+                const email = document.getElementById('su-email').value.trim().toLowerCase();
                 const pass = document.getElementById('su-password').value;
                 const passConf = document.getElementById('su-password-confirm').value;
                 const pin = document.getElementById('su-pin').value;
@@ -696,7 +705,7 @@
                 // Load workers
                 let workers = [];
                 try { workers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
-                let workerIdx = workers.findIndex(w => w.email === email);
+                let workerIdx = workers.findIndex(w => w.email && w.email.toLowerCase() === email);
                 let worker = null;
 
                 if (workerIdx !== -1) {
@@ -755,14 +764,14 @@
         if (twoFaForm) {
             twoFaForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const email = document.getElementById('2fa-email').value;
+                const email = document.getElementById('2fa-email').value.trim().toLowerCase();
                 const pin = document.getElementById('login-2fa-pin').value;
                 const errorEl = document.getElementById('2fa-error');
 
                 // Find worker
                 let workers = [];
                 try { workers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
-                let worker = workers.find(w => w.email === email);
+                let worker = workers.find(w => w.email && w.email.toLowerCase() === email);
 
                 if (!worker && (isFirebaseActive || FIREBASE_CONFIG.apiKey)) {
                     try {
@@ -810,14 +819,14 @@
         if (loginForm) {
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const email = document.getElementById('login-email').value.trim();
+                const email = document.getElementById('login-email').value.trim().toLowerCase();
                 const pass = document.getElementById('login-password').value;
                 const errorEl = document.getElementById('login-error');
 
                 // Find worker
                 let workers = [];
                 try { workers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
-                let worker = workers.find(w => w.email === email);
+                let worker = workers.find(w => w.email && w.email.toLowerCase() === email);
 
                 if (!worker && (isFirebaseActive || FIREBASE_CONFIG.apiKey)) {
                     // Fetch worker from Firestore
@@ -924,7 +933,7 @@
             }
 
             container.innerHTML = messages.map(msg => {
-                const isSelf = msg.senderEmail === myEmail;
+                const isSelf = msg.senderEmail && myEmail && msg.senderEmail.toLowerCase() === myEmail.toLowerCase();
                 const dateStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
                 const senderName = msg.senderName || 'Anonymous';
                 const roleLabel = msg.role || 'Worker';
@@ -999,7 +1008,7 @@
             let orders = [];
             try { orders = JSON.parse(localStorage.getItem('client_orders') || '[]'); } catch {}
             
-            const assignedOrders = orders.filter(o => o.assignedWorkerEmail === profile.email);
+            const assignedOrders = orders.filter(o => o.assignedWorkerEmail && profile.email && o.assignedWorkerEmail.toLowerCase() === profile.email.toLowerCase());
             const container = document.getElementById('project-list-container');
             
             document.getElementById('stat-count').textContent = assignedOrders.length;
@@ -1108,7 +1117,7 @@
 
             // 3. RENDER ACTIVE HELP REQUESTS QUEUE
             const helpContainer = document.getElementById('help-request-list-container');
-            const helpOrders = orders.filter(o => o.helpRequested === true && o.assignedWorkerEmail !== profile.email && o.status === 'approved');
+            const helpOrders = orders.filter(o => o.helpRequested === true && o.assignedWorkerEmail && profile.email && o.assignedWorkerEmail.toLowerCase() !== profile.email.toLowerCase() && o.status === 'approved');
 
             if (helpContainer) {
                 if (!helpOrders.length) {
@@ -1116,7 +1125,7 @@
                 } else {
                     helpContainer.innerHTML = helpOrders.map(o => {
                         const helpers = o.helpers || [];
-                        const isHelping = helpers.some(h => h.email === profile.email);
+                        const isHelping = helpers.some(h => h.email && profile.email && h.email.toLowerCase() === profile.email.toLowerCase());
                         const isFull = helpers.length >= 3;
                         
                         let helpActionHtml = '';
@@ -1286,7 +1295,7 @@
                 }
 
                 // Check if already joined
-                if (helpers.some(h => h.email === profile.email)) {
+                if (helpers.some(h => h.email && profile.email && h.email.toLowerCase() === profile.email.toLowerCase())) {
                     toast('You are already helping on this project.', 'warn');
                     return;
                 }
@@ -1325,7 +1334,7 @@
                 const order = orders[idx];
                 let helpers = order.helpers || [];
 
-                helpers = helpers.filter(h => h.email !== profile.email);
+                helpers = helpers.filter(h => h.email && profile.email && h.email.toLowerCase() !== profile.email.toLowerCase());
                 order.helpers = helpers;
 
                 localStorage.setItem('client_orders', JSON.stringify(orders));
