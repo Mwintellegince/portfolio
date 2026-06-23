@@ -281,7 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const pageNames = {
         overview: '/ Overview',
-        users:    '/ Users & Workers',
+        users:    '/ Clients',
+        workers:  '/ Active Workers',
         pending:  '/ Pending Orders',
         history:  '/ History',
         receipts: '/ Receipts',
@@ -439,6 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setText('pending-pill', pending);
         setText('history-pill', history);
         setText('nav-badge-users', getUsers().length);
+        setText('nav-badge-workers', getWorkers().length);
 
         // Applications badges
         const apps = getApplications();
@@ -1045,11 +1047,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inviteCloseBtn) {
         inviteCloseBtn.addEventListener('click', () => {
             if (inviteModal) inviteModal.classList.remove('open');
+            window.switchAdminPage('workers');
         });
     }
     if (inviteModal) {
         inviteModal.addEventListener('click', (e) => {
-            if (e.target === inviteModal) inviteModal.classList.remove('open');
+            if (e.target === inviteModal) {
+                inviteModal.classList.remove('open');
+                window.switchAdminPage('workers');
+            }
         });
     }
     if (copyInviteBtn && inviteLinkInput) {

@@ -696,28 +696,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.href = 'worker.html';
                 }, 1000);
             } else {
-                let isPending = false;
+                let appStatus = null;
+                let rejectionReason = '';
                 if (isFirebaseActive && db) {
                     try {
                         const snapshot = await db.collection('applications').get();
                         snapshot.forEach(d => {
                             if (d.data().email && d.data().email.toLowerCase() === email) {
-                                isPending = true;
+                                appStatus = d.data().status;
+                                rejectionReason = d.data().rejectionReason || '';
                             }
                         });
                     } catch (err) {}
                 }
-                if (!isPending) {
+                if (!appStatus) {
                     let localApps = [];
                     try { localApps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
-                    if (localApps.some(a => a.email && a.email.toLowerCase() === email)) {
-                        isPending = true;
+                    const localApp = localApps.find(a => a.email && a.email.toLowerCase() === email);
+                    if (localApp) {
+                        appStatus = localApp.status;
+                        rejectionReason = localApp.rejectionReason || '';
                     }
                 }
 
-                if (isPending) {
+                if (appStatus === 'pending') {
                     showNotification("Your application is currently under review by an administrator.", "info");
                     closeProfileModal();
+                } else if (appStatus === 'rejected') {
+                    showNotification(`Your application was rejected: ${rejectionReason}`, "error");
+                    closeProfileModal();
+                    setTimeout(() => openApplyModal(), 1500);
                 } else {
                     showNotification("You do not have a worker profile. Apply to become a worker.", "warn");
                     closeProfileModal();
@@ -3061,28 +3069,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Check if user already applied
-        let isPending = false;
+        let appStatus = null;
+        let rejectionReason = '';
         if (isFirebaseActive && typeof db !== 'undefined' && db) {
             try {
                 const snapshot = await db.collection('applications').get();
                 snapshot.forEach(d => {
                     if (d.data().email && d.data().email.toLowerCase() === email) {
-                        isPending = true;
+                        appStatus = d.data().status;
+                        rejectionReason = d.data().rejectionReason || '';
                     }
                 });
             } catch (err) {}
         }
-        if (!isPending) {
+        if (!appStatus) {
             let existingApps = [];
             try { existingApps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
-            if (existingApps.some(a => a.email && a.email.toLowerCase() === email)) {
-                isPending = true;
+            const localApp = existingApps.find(a => a.email && a.email.toLowerCase() === email);
+            if (localApp) {
+                appStatus = localApp.status;
+                rejectionReason = localApp.rejectionReason || '';
             }
         }
 
-        if (isPending) {
+        if (appStatus === 'pending') {
             showNotification('Your application is currently under review by an administrator.', 'info');
             return;
+        } else if (appStatus === 'rejected') {
+            showNotification(`Your previous application was rejected: ${rejectionReason}. You may apply again.`, 'warn');
         }
         
         if (siteNav && siteNav.classList.contains('nav-open')) {

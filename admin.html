@@ -952,8 +952,13 @@
             </button>
             <button class="nav-item" data-page="users">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                Users
+                Clients
                 <span class="nav-badge" id="nav-badge-users">0</span>
+            </button>
+            <button class="nav-item" data-page="workers">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Workers
+                <span class="nav-badge" id="nav-badge-workers">0</span>
             </button>
 
             <div class="nav-section-label">Orders</div>
@@ -1225,13 +1230,13 @@
         <div class="page" id="page-users">
             <div class="page-header">
                 <div class="page-eyebrow">Database</div>
-                <h1 class="page-title">Registered Users</h1>
+                <h1 class="page-title">Registered Clients</h1>
                 <p class="page-sub">All registered client portal accounts.</p>
             </div>
 
             <div class="section-card">
                 <div class="section-head">
-                    <h2>All Users</h2>
+                    <h2>All Clients</h2>
                 </div>
                 <table class="data-table">
                     <thead>
@@ -1249,7 +1254,33 @@
                 </table>
             </div>
 
-            <div class="section-card" style="margin-top: 30px;">
+            <!-- Add New User Form -->
+            <div class="section-card" style="padding: 24px; margin-top: 30px; max-width: 600px;">
+                <div class="section-head" style="margin-bottom: 20px;">
+                    <h2>Add New Client / Admin</h2>
+                </div>
+                <form id="add-user-form" style="display:flex;flex-direction:column;gap:14px;">
+                    <input type="text" id="add-user-name" placeholder="Client's full name" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                    <input type="email" id="add-user-email" placeholder="Client's email address" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                    <input type="text" id="add-user-password" placeholder="Set temporary password" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                    <select id="add-user-role" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <option value="client">Client</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button type="submit" class="modal-btn primary" style="cursor:none;">Create User</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ── ACTIVE WORKERS PAGE ── -->
+        <div class="page" id="page-workers">
+            <div class="page-header">
+                <div class="page-eyebrow">Database</div>
+                <h1 class="page-title">Active Workers</h1>
+                <p class="page-sub">Manage your team members, credentials, and worker settings.</p>
+            </div>
+
+            <div class="section-card">
                 <div class="section-head">
                     <h2>Active Workers</h2>
                 </div>
@@ -1269,35 +1300,18 @@
                 </table>
             </div>
 
-            <!-- Add New User / Worker Form -->
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 30px;">
-                <div class="section-card" style="padding: 24px;">
-                    <div class="section-head" style="margin-bottom: 20px;">
-                        <h2>Add New User</h2>
-                    </div>
-                    <form id="add-user-form" style="display:flex;flex-direction:column;gap:14px;">
-                        <input type="text" id="add-user-name" placeholder="Client's full name" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                        <input type="email" id="add-user-email" placeholder="Client's email address" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                        <input type="text" id="add-user-password" placeholder="Set temporary password" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                        <select id="add-user-role" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                            <option value="client">Client</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                        <button type="submit" class="modal-btn primary" style="cursor:none;">Create User</button>
-                    </form>
+            <!-- Add New Worker Form -->
+            <div class="section-card" style="padding: 24px; margin-top: 30px; max-width: 600px;">
+                <div class="section-head" style="margin-bottom: 20px;">
+                    <h2>Add New Worker</h2>
                 </div>
-                <div class="section-card" style="padding: 24px;">
-                    <div class="section-head" style="margin-bottom: 20px;">
-                        <h2>Add New Worker</h2>
-                    </div>
-                    <form id="add-worker-form" style="display:flex;flex-direction:column;gap:14px;">
-                        <input type="text" id="add-worker-name" placeholder="Worker's full name" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                        <input type="email" id="add-worker-email" placeholder="Worker's email address" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                        <input type="text" id="add-worker-major" placeholder="e.g. Full Stack Developer" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                        <input type="text" id="add-worker-password" placeholder="Set temporary password" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                        <button type="submit" class="modal-btn primary" style="cursor:none;">Create Worker</button>
-                    </form>
-                </div>
+                <form id="add-worker-form" style="display:flex;flex-direction:column;gap:14px;">
+                    <input type="text" id="add-worker-name" placeholder="Worker's full name" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                    <input type="email" id="add-worker-email" placeholder="Worker's email address" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                    <input type="text" id="add-worker-major" placeholder="e.g. Full Stack Developer" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                    <input type="text" id="add-worker-password" placeholder="Set temporary password" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                    <button type="submit" class="modal-btn primary" style="cursor:none;">Create Worker</button>
+                </form>
             </div>
         </div>
 
@@ -1579,7 +1593,7 @@
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
         </svg>
-        <span class="mobile-nav-label">Users</span>
+        <span class="mobile-nav-label">Clients</span>
     </button>
     <button class="mobile-nav-item" data-admin-page="pending">
         <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1616,11 +1630,12 @@
         <button class="mobile-drawer-close" id="admin-mobile-drawer-close" aria-label="Close menu">&times;</button>
     </div>
     <ul class="mobile-drawer-links">
-        <li style="--stagger-index: 1;"><button class="drawer-link" data-admin-page="history"><span class="drawer-num">01</span> History</button></li>
-        <li style="--stagger-index: 2;"><button class="drawer-link" data-admin-page="receipts"><span class="drawer-num">02</span> Receipts</button></li>
-        <li style="--stagger-index: 3;"><button class="drawer-link" data-admin-page="announcements"><span class="drawer-num">03</span> Announcements</button></li>
-        <li style="--stagger-index: 4;"><a href="index.html" class="drawer-link" style="color:var(--gold); border-color:rgba(212,175,55,.1);"><span class="drawer-num">04</span> Exit to Site</a></li>
-        <li style="--stagger-index: 5;"><button class="drawer-link" id="admin-mobile-drawer-logout-btn" style="color:var(--red); border-color:rgba(231,76,60,.1);"><span class="drawer-num">05</span> Lock Panel</button></li>
+        <li style="--stagger-index: 1;"><button class="drawer-link" data-admin-page="workers"><span class="drawer-num">01</span> Workers</button></li>
+        <li style="--stagger-index: 2;"><button class="drawer-link" data-admin-page="history"><span class="drawer-num">02</span> History</button></li>
+        <li style="--stagger-index: 3;"><button class="drawer-link" data-admin-page="receipts"><span class="drawer-num">03</span> Receipts</button></li>
+        <li style="--stagger-index: 4;"><button class="drawer-link" data-admin-page="announcements"><span class="drawer-num">04</span> Announcements</button></li>
+        <li style="--stagger-index: 5;"><a href="index.html" class="drawer-link" style="color:var(--gold); border-color:rgba(212,175,55,.1);"><span class="drawer-num">05</span> Exit to Site</a></li>
+        <li style="--stagger-index: 6;"><button class="drawer-link" id="admin-mobile-drawer-logout-btn" style="color:var(--red); border-color:rgba(231,76,60,.1);"><span class="drawer-num">06</span> Lock Panel</button></li>
     </ul>
 </div>
 
