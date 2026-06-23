@@ -323,12 +323,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         const userDoc = await db.collection('users').doc(firebaseUser.uid).get();
                         if (userDoc.exists) {
                             const userData = userDoc.data();
-                            setAuthUserState({
+                            const profileData = {
                                 uid: firebaseUser.uid,
                                 displayName: userData.displayName,
                                 email: userData.email,
                                 role: userData.role || 'client'
-                            });
+                            };
+                            setAuthUserState(profileData);
+
+                            // Save to local client_users array for local sync / admin access
+                            let localUsers = [];
+                            try { localUsers = JSON.parse(localStorage.getItem('client_users') || '[]'); } catch {}
+                            if (!localUsers.some(u => u.email === userData.email)) {
+                                localUsers.push({
+                                    displayName: userData.displayName,
+                                    email: userData.email,
+                                    role: userData.role || 'client',
+                                    createdAt: userData.createdAt || new Date().toISOString()
+                                });
+                                localStorage.setItem('client_users', JSON.stringify(localUsers));
+                            }
                         } else {
                             // Account not in Firestore database. Prompt user to sign up
                             await firebase.auth().signOut();
@@ -338,12 +352,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     } catch (err) {
                         console.error("Auth Firestore observer error:", err);
                         // Offline or connection failure fallback
-                        setAuthUserState({
+                        const fallbackUser = {
                             uid: firebaseUser.uid,
                             displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
                             email: firebaseUser.email,
                             role: 'client'
-                        });
+                        };
+                        setAuthUserState(fallbackUser);
+
+                        // Save to local client_users array for local sync / admin access
+                        let localUsers = [];
+                        try { localUsers = JSON.parse(localStorage.getItem('client_users') || '[]'); } catch {}
+                        if (!localUsers.some(u => u.email === fallbackUser.email)) {
+                            localUsers.push({
+                                displayName: fallbackUser.displayName,
+                                email: fallbackUser.email,
+                                role: 'client',
+                                createdAt: new Date().toISOString()
+                            });
+                            localStorage.setItem('client_users', JSON.stringify(localUsers));
+                        }
                     }
                 } else {
                     setAuthUserState(null);

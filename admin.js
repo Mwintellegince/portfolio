@@ -1530,4 +1530,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Cross-tab live data synchronization
+    window.addEventListener('storage', (e) => {
+        if (['client_users', 'client_orders', 'client_applications', 'client_workers', 'client_announcements'].includes(e.key)) {
+            loadAllData();
+        }
+    });
+
 });

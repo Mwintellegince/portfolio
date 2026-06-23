@@ -4620,6 +4620,12 @@ body.has-error-notif #custom-cursor-ring {
     box-sizing: border-box;
 }
 
+@media (max-width: 1023px) {
+    .mobile-nav-bar {
+        display: flex !important;
+    }
+}
+
 /* Floating Slide Active Indicator Bubble */
 .mobile-nav-indicator {
     position: absolute;
