@@ -660,14 +660,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         isWorker = true;
                         workerObj = { id: doc.id, ...doc.data() };
                     } else {
-                        // Fallback: Scan workers collection case-insensitively in case it was created with mixed casing
-                        const snapshot = await db.collection('workers').get();
+                        const snapshot = await db.collection('workers').where('email', '==', email).get();
                         snapshot.forEach(d => {
-                            const data = d.data();
-                            if (data.email && data.email.toLowerCase() === email) {
-                                isWorker = true;
-                                workerObj = { id: d.id, ...data };
-                            }
+                            isWorker = true;
+                            workerObj = { id: d.id, ...d.data() };
                         });
                     }
                 } catch (err) {
@@ -700,12 +696,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 let rejectionReason = '';
                 if (isFirebaseActive && db) {
                     try {
-                        const snapshot = await db.collection('applications').get();
+                        const snapshot = await db.collection('applications').where('email', '==', email).get();
                         snapshot.forEach(d => {
-                            if (d.data().email && d.data().email.toLowerCase() === email) {
-                                appStatus = d.data().status;
-                                rejectionReason = d.data().rejectionReason || '';
-                            }
+                            appStatus = d.data().status;
+                            rejectionReason = d.data().rejectionReason || '';
                         });
                     } catch (err) {}
                 }
@@ -3073,12 +3067,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let rejectionReason = '';
         if (isFirebaseActive && typeof db !== 'undefined' && db) {
             try {
-                const snapshot = await db.collection('applications').get();
+                const snapshot = await db.collection('applications').where('email', '==', email).get();
                 snapshot.forEach(d => {
-                    if (d.data().email && d.data().email.toLowerCase() === email) {
-                        appStatus = d.data().status;
-                        rejectionReason = d.data().rejectionReason || '';
-                    }
+                    appStatus = d.data().status;
+                    rejectionReason = d.data().rejectionReason || '';
                 });
             } catch (err) {}
         }
