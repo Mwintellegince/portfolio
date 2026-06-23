@@ -858,10 +858,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const dateStr = new Date(app.submittedAt).toLocaleDateString();
 
             let statusBadgeClass = 'pending';
-            if (status === 'approved' || status === 'accepted') statusBadgeClass = 'success';
-            if (status === 'rejected') statusBadgeClass = 'rejected';
-
             let statusLabel = status.toUpperCase();
+            let statusMessage = '';
+
+            if (status === 'approved' || status === 'accepted') {
+                statusBadgeClass = 'success';
+                statusLabel = 'ACCEPTED';
+                statusMessage = '<div style="margin-top:8px;padding:10px 12px;background:rgba(16,185,129,.08);border-left:3px solid #10b981;border-radius:4px;font-size:.78rem;color:#10b981;">Welcome to the team! Check your email for login credentials and next steps.</div>';
+            }
+            if (status === 'rejected') {
+                statusBadgeClass = 'rejected';
+                statusLabel = 'REJECTED';
+                const reason = app.rejectionReason
+                    ? `<span style="color:var(--text-primary);">${esc(app.rejectionReason)}</span>`
+                    : 'No specific reason provided.';
+                statusMessage = `<div style="margin-top:8px;padding:10px 12px;background:rgba(239,68,68,.06);border-left:3px solid #ef4444;border-radius:4px;font-size:.78rem;color:var(--text-muted);">Reason: ${reason}</div>`;
+            }
 
             const appHtml = `
                 <div style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 6px; padding: 15px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 5px;">
@@ -875,6 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
                         <div>Date: <span style="color: var(--text-primary); font-weight: 500;">${dateStr}</span></div>
                     </div>
+                    ${statusMessage}
                 </div>
             `;
             return appHtml;
@@ -2911,6 +2924,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle Modal
     function openApplyModal(e) {
         if (e) e.preventDefault();
+
+        if (!currentUser) {
+            openAuthModal();
+            showAuthStatus("Please sign in to submit an application.", "warn");
+            return;
+        }
+
+        // Check if user already applied
+        let existingApps = [];
+        try { existingApps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
+        const userApp = existingApps.find(a => a.email === currentUser.email && (a.status === 'pending' || a.status === 'approved'));
+        if (userApp) {
+            const statusMsg = userApp.status === 'approved'
+                ? 'You have already been accepted as a team member. Check your profile for next steps.'
+                : 'You already have a pending application. You will be contacted when there is an update.';
+            showNotification(statusMsg, 'warn');
+            return;
+        }
         
         if (siteNav && siteNav.classList.contains('nav-open')) {
             siteNav.classList.remove('nav-open');
@@ -3100,7 +3131,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => playTone(659.25, 'sine', 0.15, 0.1), 100);
                 setTimeout(() => playTone(783.99, 'sine', 0.3,  0.1), 200);
 
-                showNotification('Application submitted successfully! I will review your submission soon.', 'success');
+                showNotification('Application submitted! You will be contacted if there is any update.', 'success');
 
                 closeApplyModal();
                 applyForm.reset();

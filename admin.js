@@ -1059,6 +1059,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const app = apps[idx];
         app.status = 'approved';
+        app.completedAt = new Date().toISOString();
         saveApplications(apps);
         await syncApplicationUpdate(app);
 
@@ -1133,17 +1134,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
         toast(`Worker approved & temporary credentials generated.`, 'success');
         loadAllData();
+        sendApplicationEmail({ ...app, tempPassword }, 'approved');
     };
 
-    window._adminRejectApplication = async function(idx) {
-        const apps = getApplications();
-        if (!apps[idx]) return;
-        apps[idx].status = 'rejected';
-        saveApplications(apps);
-        toast(`Application rejected for ${apps[idx].name}.`, 'error');
-        loadAllData();
-        await syncApplicationUpdate(apps[idx]);
+    let _rejectAppIdx = -1;
+
+    window._adminRejectApplication = function(idx) {
+        _rejectAppIdx = idx;
+        document.getElementById('rejection-reason-input').value = '';
+        document.getElementById('rejection-modal').classList.add('open');
     };
+
+    document.getElementById('rejection-confirm-btn')?.addEventListener('click', async () => {
+        if (_rejectAppIdx < 0) return;
+        const apps = getApplications();
+        const app = apps[_rejectAppIdx];
+        if (!app) return;
+        const reason = document.getElementById('rejection-reason-input').value.trim() || 'No specific reason provided.';
+        app.status = 'rejected';
+        app.rejectionReason = reason;
+        app.completedAt = new Date().toISOString();
+        saveApplications(apps);
+        toast(`Application rejected for ${app.name}.`, 'error');
+        document.getElementById('rejection-modal').classList.remove('open');
+        _rejectAppIdx = -1;
+        loadAllData();
+        await syncApplicationUpdate(app);
+        sendApplicationEmail(app, 'rejected', reason);
+    });
+
+    document.getElementById('rejection-cancel-btn')?.addEventListener('click', () => {
+        document.getElementById('rejection-modal').classList.remove('open');
+        _rejectAppIdx = -1;
+    });
 
     const appsRefreshBtn = document.getElementById('apps-refresh-btn');
     if (appsRefreshBtn) {
@@ -1630,6 +1653,126 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function buildAppEmailBody(app, action, reason) {
+        if (action === 'approved') {
+            return `
+                <table cellpadding="0" cellspacing="0" style="width:100%;background:#0a0a0c;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+                    <tr><td style="padding:40px 16px;">
+                        <table cellpadding="0" cellspacing="0" style="max-width:480px;margin:0 auto;background:#111114;border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;">
+                            <tr>
+                                <td style="padding:32px 32px 0;">
+                                    <div style="width:40px;height:40px;border-radius:50%;background:#10b98120;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+                                        <span style="color:#10b981;font-size:18px;font-weight:700;">M</span>
+                                    </div>
+                                    <h1 style="color:#f0ede6;font-size:20px;font-weight:600;margin:0 0 4px;letter-spacing:-.3px;">Welcome to the Team!</h1>
+                                    <p style="color:#6b6b78;font-size:14px;margin:0 0 24px;line-height:1.5;">Your application has been approved. Use the credentials below to access the worker portal.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:0 32px;">
+                                    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:8px;padding:20px;">
+                                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                                            <span style="color:#6b6b78;font-size:13px;">Role</span>
+                                            <span style="color:#f0ede6;font-size:13px;font-weight:500;">${esc(app.major || 'Team Member')}</span>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                                            <span style="color:#6b6b78;font-size:13px;">Login Email</span>
+                                            <span style="color:#f0ede6;font-size:13px;font-weight:500;">${esc(app.email)}</span>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;padding:8px 0;">
+                                            <span style="color:#6b6b78;font-size:13px;">Temporary Password</span>
+                                            <span style="color:#d4af37;font-size:13px;font-weight:600;font-family:monospace;">${esc(app.tempPassword || '—')}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:24px 32px 32px;">
+                                    <div style="height:1px;background:rgba(255,255,255,.04);margin-bottom:20px;"></div>
+                                    <p style="color:#6b6b78;font-size:12px;margin:0 0 4px;line-height:1.5;">Sign in at <strong style="color:#f0ede6;">worker.html</strong> and set your permanent password &amp; 2FA PIN on first login.</p>
+                                    <p style="color:#4a4a55;font-size:11px;margin:0;">MW Intelligence &mdash; This is an automated message.</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td></tr>
+                </table>`;
+        } else {
+            return `
+                <table cellpadding="0" cellspacing="0" style="width:100%;background:#0a0a0c;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+                    <tr><td style="padding:40px 16px;">
+                        <table cellpadding="0" cellspacing="0" style="max-width:480px;margin:0 auto;background:#111114;border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;">
+                            <tr>
+                                <td style="padding:32px 32px 0;">
+                                    <div style="width:40px;height:40px;border-radius:50%;background:#e74c3c20;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+                                        <span style="color:#e74c3c;font-size:18px;font-weight:700;">M</span>
+                                    </div>
+                                    <h1 style="color:#f0ede6;font-size:20px;font-weight:600;margin:0 0 4px;letter-spacing:-.3px;">Application Update</h1>
+                                    <p style="color:#6b6b78;font-size:14px;margin:0 0 24px;line-height:1.5;">We carefully reviewed your application for the <strong style="color:#f0ede6;">${esc(app.major || 'Team Member')}</strong> position.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:0 32px;">
+                                    <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:8px;padding:20px;">
+                                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                                            <span style="color:#6b6b78;font-size:13px;">Status</span>
+                                            <span style="color:#e74c3c;font-size:13px;font-weight:600;">Not Selected</span>
+                                        </div>
+                                        <div style="display:flex;flex-direction:column;padding:8px 0;">
+                                            <span style="color:#6b6b78;font-size:13px;margin-bottom:6px;">Reason</span>
+                                            <span style="color:#f0ede6;font-size:13px;line-height:1.5;">${esc(reason || 'No specific reason provided.')}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:24px 32px 32px;">
+                                    <div style="height:1px;background:rgba(255,255,255,.04);margin-bottom:20px;"></div>
+                                    <p style="color:#6b6b78;font-size:12px;margin:0 0 4px;line-height:1.5;">Thank you for your interest in joining MW Intelligence.</p>
+                                    <p style="color:#4a4a55;font-size:11px;margin:0;">This is an automated message. Please do not reply directly.</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td></tr>
+                </table>`;
+        }
+    }
+
+    async function sendApplicationEmail(app, action, reason) {
+        const htmlBody = buildAppEmailBody(app, action, reason);
+        const plainText = htmlBody.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+        const subject = action === 'approved'
+            ? 'Welcome to MW Intelligence! — Your Application Has Been Approved'
+            : 'Application Update — MW Intelligence';
+
+        try {
+            const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+                method: 'POST',
+                headers: {
+                    'api-key': BREVO_API_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sender: BREVO_SENDER,
+                    to: [{ email: app.email, name: app.name }],
+                    subject,
+                    htmlContent: htmlBody,
+                    textContent: plainText
+                })
+            });
+            if (resp.ok) {
+                toast(`Application email sent to ${app.email}.`, 'success');
+            } else {
+                const errText = await resp.text();
+                console.warn('Brevo API error (app email):', resp.status, errText);
+                toast(`Could not send email. Preview shown.`, 'warn');
+                showEmailPreview(app.email || '', htmlBody, false);
+            }
+        } catch (err) {
+            console.warn('Brevo app email failed:', err);
+            showEmailPreview(app.email || '', htmlBody, false);
+        }
+    }
+
     function showEmailPreview(email, htmlBody, sent) {
         const modalBody = document.getElementById('email-modal-body');
         const modalTitle = document.querySelector('#email-modal .modal-title');
@@ -1663,8 +1806,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toast(`✓ Order from ${orders[idx].name} accepted.`, 'success');
         loadAllData();
         await syncOrderUpdate(orders[idx]);
-        // Send email notification
-        sendEmail(orders[idx], 'approved');
+        await sendEmail(orders[idx], 'approved');
     };
 
     window._adminReject = async function(idx) {
@@ -1703,7 +1845,7 @@ document.addEventListener('DOMContentLoaded', () => {
             toast(`Order rejected. PayPal/Card refund typically takes 5–14 business days.`, 'error');
             loadAllData();
             await syncOrderUpdate(orders[idx]);
-            sendEmail(orders[idx], 'rejected');
+            await sendEmail(orders[idx], 'rejected');
         }
     };
 
@@ -1720,7 +1862,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pendingRejectIdx = -1;
             loadAllData();
             await syncOrderUpdate(updatedOrder);
-            sendEmail(updatedOrder, 'rejected');
+            await sendEmail(updatedOrder, 'rejected');
         });
     }
     if (rmCancelBtn) {

@@ -1610,6 +1610,19 @@
     </ul>
 </div>
 
+<!-- Rejection Reason Modal -->
+<div class="modal-overlay" id="rejection-modal">
+    <div class="modal-box" style="max-width: 420px;">
+        <div class="modal-title">Reject Application</div>
+        <div class="modal-sub" style="margin-bottom: 16px;">Provide a reason for rejection. This will be visible to the applicant.</div>
+        <textarea id="rejection-reason-input" rows="3" placeholder="Enter the reason for rejection..." style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;resize:vertical;"></textarea>
+        <div class="modal-actions" style="margin-top:16px;">
+            <button class="modal-btn ghost" id="rejection-cancel-btn" style="cursor:none;">Cancel</button>
+            <button class="modal-btn primary" id="rejection-confirm-btn" style="cursor:none;background:#e74c3c;">Reject Application</button>
+        </div>
+    </div>
+</div>
+
 <!-- Custom Confirm Modal -->
 <div class="modal-overlay" id="confirm-modal">
     <div class="modal-box" style="max-width: 400px;">
