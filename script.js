@@ -3187,7 +3187,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof isFirebaseActive !== 'undefined' && isFirebaseActive && typeof db !== 'undefined' && db) {
                     try {
                         const { id, ...appData } = application;
-                        await db.collection('applications').doc(id).set(appData);
+                        db.collection('applications').doc(id).set(appData).catch(err => {
+                            console.error('Firestore application sync background error:', err);
+                        });
                     } catch (err) {
                         console.error('Firestore application sync error:', err);
                     }
