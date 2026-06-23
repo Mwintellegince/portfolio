@@ -45,11 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Firebase Firestore initialized on admin side.");
             
             setupFirebaseListeners();
-            loadAllData();
+            await loadAllData();
             return true;
         } catch (e) {
             console.error("Failed to initialize Firebase on admin:", e);
-            loadAllData();
+            await loadAllData();
             return false;
         }
     }
@@ -366,7 +366,27 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('client_users', JSON.stringify(arr));
     }
 
-    function loadAllData() {
+    async function loadAllData() {
+        // Eagerly fetch from Firestore if available — ensures live data on every load
+        if (isFirebaseActive && db) {
+            const collections = [
+                { name: 'orders',      key: 'client_orders' },
+                { name: 'users',       key: 'client_users' },
+                { name: 'applications', key: 'client_applications' },
+                { name: 'announcements',key: 'client_announcements' },
+                { name: 'workers',     key: 'client_workers' },
+            ];
+            for (const c of collections) {
+                try {
+                    const snap = await db.collection(c.name).get();
+                    const docs = [];
+                    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+                    localStorage.setItem(c.key, JSON.stringify(docs));
+                } catch (e) {
+                    // collection may not exist yet — use localStorage fallback
+                }
+            }
+        }
         renderStats();
         renderPending();
         renderHistory();
@@ -806,20 +826,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('users-tbody');
         if (!tbody) return;
 
-        let users = getUsers();
-        if (!users.length && isFirebaseActive && db) {
-            // Direct Firestore query fallback — ensures users appear on fresh load
-            db.collection('users').get().then(snapshot => {
-                const firestoreUsers = [];
-                snapshot.forEach(doc => firestoreUsers.push({ id: doc.id, ...doc.data() }));
-                if (firestoreUsers.length) {
-                    localStorage.setItem('client_users', JSON.stringify(firestoreUsers));
-                    renderUsers();
-                    return;
-                }
-            }).catch(() => {});
-        }
-
+        const users = getUsers();
         if (!users.length) {
             tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No users registered yet.</td></tr>';
             return;
@@ -851,19 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('workers-tbody');
         if (!tbody) return;
 
-        let workers = getWorkers();
-        if (!workers.length && isFirebaseActive && db) {
-            db.collection('workers').get().then(snapshot => {
-                const firestoreWorkers = [];
-                snapshot.forEach(doc => firestoreWorkers.push({ id: doc.id, ...doc.data() }));
-                if (firestoreWorkers.length) {
-                    localStorage.setItem('client_workers', JSON.stringify(firestoreWorkers));
-                    renderWorkers();
-                    return;
-                }
-            }).catch(() => {});
-        }
-
+        const workers = getWorkers();
         if (!workers.length) {
             tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No workers registered yet.</td></tr>';
             return;
