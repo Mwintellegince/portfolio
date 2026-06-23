@@ -915,16 +915,16 @@
 <!-- ========== LOCK SCREEN ========== -->
 <div id="lock-screen">
     <div class="lock-wrap">
-        <div class="lock-eyebrow">Secure Access</div>
-        <h1 class="lock-title">Admin <span>Panel</span></h1>
-        <p class="lock-sub">Local execution only. Enter the security key to unlock the dashboard.</p>
+        <div class="lock-eyebrow">MW Intelligence</div>
+        <h1 class="lock-title">Admin <span>Console</span></h1>
+        <p class="lock-sub">Authorized personnel only. Enter your security key.</p>
 
         <div class="lock-field">
-            <input type="password" id="pw-input" placeholder="Security key..." autocomplete="off">
+            <input type="password" id="pw-input" placeholder="Enter security key" autocomplete="off">
         </div>
         <button id="lock-btn">Unlock Dashboard</button>
         <div class="lock-error" id="lock-error">
-            Incorrect key. Access denied.
+            Invalid key — access denied.
         </div>
         <div class="lock-dots">
             <div class="lock-dot" id="dot-1"></div>
@@ -941,7 +941,7 @@
     <aside id="sidebar">
         <div class="sidebar-logo">
             <div class="sidebar-logo-mark">M<span>.</span></div>
-            <div class="sidebar-logo-sub">Admin Dashboard</div>
+            <div class="sidebar-logo-sub">Admin Console</div>
         </div>
 
         <nav class="sidebar-nav">
@@ -1007,29 +1007,29 @@
             <div class="page-header">
                 <div class="page-eyebrow">Dashboard</div>
                 <h1 class="page-title">Overview</h1>
-                <p class="page-sub">Live view of all orders and earnings.</p>
+                <p class="page-sub">Real-time revenue and order metrics.</p>
             </div>
 
             <div class="stats-row" id="stats-row">
                 <div class="stat-card">
                     <div class="s-label">Net Sales</div>
                     <div class="s-val gold" id="stat-sales">0 EGP</div>
-                    <div class="s-change">Approved orders total</div>
+                    <div class="s-change">Completed sales revenue</div>
                 </div>
                 <div class="stat-card">
                     <div class="s-label">Refunded</div>
                     <div class="s-val red" id="stat-refunds">0 EGP</div>
-                    <div class="s-change">Rejected orders total</div>
+                    <div class="s-change">Refunded order value</div>
                 </div>
                 <div class="stat-card">
                     <div class="s-label">Pending</div>
                     <div class="s-val" id="stat-pending">0</div>
-                    <div class="s-change">Awaiting review</div>
+                    <div class="s-change">Orders awaiting decision</div>
                 </div>
                 <div class="stat-card">
                     <div class="s-label">Registered Users</div>
                     <div class="s-val gold" id="stat-users">0</div>
-                    <div class="s-change">Total accounts</div>
+                    <div class="s-change">Active portal accounts</div>
                 </div>
             </div>
 
@@ -1043,7 +1043,7 @@
 
                 </div>
                 <div class="activity-list" id="activity-list">
-                    <div style="padding:40px;text-align:center;color:var(--muted);font-size:.82rem;">No activity yet.</div>
+                    <div style="padding:40px;text-align:center;color:var(--muted);font-size:.82rem;">No recent activity to display.</div>
                 </div>
             </div>
         </div>
@@ -1053,7 +1053,7 @@
             <div class="page-header">
                 <div class="page-eyebrow">Orders</div>
                 <h1 class="page-title">Pending Requests</h1>
-                <p class="page-sub">Review and action new client orders.</p>
+                <p class="page-sub">Incoming client orders awaiting your review.</p>
             </div>
 
             <div class="section-card">
@@ -1078,7 +1078,7 @@
                         </tr>
                     </thead>
                     <tbody id="pending-tbody">
-                        <tr class="empty-row"><td colspan="7">No pending orders.</td></tr>
+                        <tr class="empty-row"><td colspan="7">All orders reviewed — nothing pending.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1089,7 +1089,7 @@
             <div class="page-header">
                 <div class="page-eyebrow">Orders</div>
                 <h1 class="page-title">History</h1>
-                <p class="page-sub">Completed and refunded order log.</p>
+                <p class="page-sub">Approved and refunded order records.</p>
             </div>
 
             <div class="section-card">
@@ -1109,7 +1109,7 @@
                         </tr>
                     </thead>
                     <tbody id="history-tbody">
-                        <tr class="empty-row"><td colspan="6">No history yet.</td></tr>
+                        <tr class="empty-row"><td colspan="6">No completed orders on record.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1120,7 +1120,7 @@
             <div class="page-header">
                 <div class="page-eyebrow">Payments</div>
                 <h1 class="page-title">InstaPay Receipts</h1>
-                <p class="page-sub">Uploaded payment screenshots for manual verification.</p>
+                <p class="page-sub">Customer-uploaded payment confirmations.</p>
             </div>
 
             <div class="section-card">
@@ -1128,7 +1128,7 @@
                     <h2>Receipt Gallery</h2>
                 </div>
                 <div class="receipt-grid" id="receipt-grid">
-                    <p style="color:var(--muted);font-size:.82rem;padding:24px;">No InstaPay receipts uploaded yet.</p>
+                    <p style="color:var(--muted);font-size:.82rem;padding:24px;">No payment receipts uploaded yet.</p>
                 </div>
             </div>
         </div>
@@ -1138,7 +1138,7 @@
             <div class="page-header">
                 <div class="page-eyebrow">Recruitment</div>
                 <h1 class="page-title">Applications</h1>
-                <p class="page-sub">Review and manage candidates who applied to join your team.</p>
+                <p class="page-sub">Candidate applications for team positions.</p>
             </div>
 
             <div class="section-card">
@@ -1173,7 +1173,7 @@
             <div class="page-header">
                 <div class="page-eyebrow">Marketing</div>
                 <h1 class="page-title">Announcements</h1>
-                <p class="page-sub">Create and manage top-bar banners shown to website visitors.</p>
+                <p class="page-sub">Banner announcements displayed site-wide.</p>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px;">
@@ -1185,15 +1185,15 @@
                     <form id="announcement-form" style="display: flex; flex-direction: column; gap: 16px;">
                         <div style="display: flex; flex-direction: column; gap: 6px;">
                             <label style="font-size: .78rem; font-weight: 600; color: var(--muted);">Banner Text</label>
-                            <textarea id="ann-text" required rows="3" placeholder="e.g. We are looking for talented developers! Apply here." style="width:100%; padding: 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: .82rem; outline: none;"></textarea>
+                            <textarea id="ann-text" required rows="3" placeholder="Write your banner message..." style="width:100%; padding: 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: .82rem; outline: none;"></textarea>
                         </div>
                         <div style="display: flex; flex-direction: column; gap: 6px;">
                             <label style="font-size: .78rem; font-weight: 600; color: var(--muted);">Action Link Text (Optional)</label>
-                            <input type="text" id="ann-link-text" placeholder="e.g. Apply Now" style="width:100%; padding: 10px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: .82rem; outline: none;">
+                            <input type="text" id="ann-link-text" placeholder="e.g. Explore Opportunities" style="width:100%; padding: 10px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: .82rem; outline: none;">
                         </div>
                         <div style="display: flex; flex-direction: column; gap: 6px;">
                             <label style="font-size: .78rem; font-weight: 600; color: var(--muted);">Action Link URL (Optional)</label>
-                            <input type="text" id="ann-link-url" placeholder="e.g. #apply or https://example.com" style="width:100%; padding: 10px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: .82rem; outline: none;">
+                            <input type="text" id="ann-link-url" placeholder="Relative path or full URL" style="width:100%; padding: 10px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; font-size: .82rem; outline: none;">
                         </div>
                         
                         <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
@@ -1215,7 +1215,7 @@
                         <h2>All Announcements</h2>
                     </div>
                     <div id="announcements-list" style="display: flex; flex-direction: column; gap: 14px;">
-                        <div style="padding:40px; text-align:center; color:var(--muted); font-size:.82rem;">No announcements created yet.</div>
+                        <div style="padding:40px; text-align:center; color:var(--muted); font-size:.82rem;">No announcements created.</div>
                     </div>
                 </div>
             </div>
@@ -1226,7 +1226,7 @@
             <div class="page-header">
                 <div class="page-eyebrow">Database</div>
                 <h1 class="page-title">Registered Users</h1>
-                <p class="page-sub">View list of users signed up on the portfolio client portal.</p>
+                <p class="page-sub">All registered client portal accounts.</p>
             </div>
 
             <div class="section-card">
@@ -1244,7 +1244,7 @@
                         </tr>
                     </thead>
                     <tbody id="users-tbody">
-                        <tr class="empty-row"><td colspan="5">No users registered yet.</td></tr>
+                        <tr class="empty-row"><td colspan="5">No registered users found.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1264,7 +1264,7 @@
                         </tr>
                     </thead>
                     <tbody id="workers-tbody">
-                        <tr class="empty-row"><td colspan="5">No workers registered yet.</td></tr>
+                        <tr class="empty-row"><td colspan="5">No team members registered yet.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1276,9 +1276,9 @@
                         <h2>Add New User</h2>
                     </div>
                     <form id="add-user-form" style="display:flex;flex-direction:column;gap:14px;">
-                        <input type="text" id="add-user-name" placeholder="Full Name" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                        <input type="email" id="add-user-email" placeholder="Email Address" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                        <input type="text" id="add-user-password" placeholder="Temporary Password" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <input type="text" id="add-user-name" placeholder="Client's full name" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <input type="email" id="add-user-email" placeholder="Client's email address" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <input type="text" id="add-user-password" placeholder="Set temporary password" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
                         <select id="add-user-role" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
                             <option value="client">Client</option>
                             <option value="admin">Admin</option>
@@ -1291,10 +1291,10 @@
                         <h2>Add New Worker</h2>
                     </div>
                     <form id="add-worker-form" style="display:flex;flex-direction:column;gap:14px;">
-                        <input type="text" id="add-worker-name" placeholder="Full Name" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                        <input type="email" id="add-worker-email" placeholder="Email Address" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                        <input type="text" id="add-worker-major" placeholder="Major / Role" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
-                        <input type="text" id="add-worker-password" placeholder="Temporary Password" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <input type="text" id="add-worker-name" placeholder="Worker's full name" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <input type="email" id="add-worker-email" placeholder="Worker's email address" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <input type="text" id="add-worker-major" placeholder="e.g. Full Stack Developer" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <input type="text" id="add-worker-password" placeholder="Set temporary password" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
                         <button type="submit" class="modal-btn primary" style="cursor:none;">Create Worker</button>
                     </form>
                 </div>
@@ -1313,7 +1313,7 @@
 <!-- ========== REFUND MODAL ========== -->
 <div class="modal-overlay" id="refund-modal">
     <div class="modal-box">
-        <div class="modal-title">Manual Refund Required</div>
+        <div class="modal-title">Refund Confirmation</div>
         <div class="modal-sub" id="rm-sub">This order was paid via InstaPay. Transfer the amount back before confirming.</div>
 
         <div class="modal-info-row">
@@ -1505,8 +1505,8 @@
 <!-- ========== EMAIL NOTIFICATION MODAL ========== -->
 <div class="modal-overlay" id="email-modal">
     <div class="modal-box" style="max-width: 520px;">
-        <div class="modal-title">Email Notification Sent</div>
-        <div class="modal-sub">An automated email has been dispatched to the customer.</div>
+        <div class="modal-title">Notification Dispatched</div>
+        <div class="modal-sub">The email has been sent successfully to the customer.</div>
         <div id="email-modal-body" style="margin:16px 0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:.78rem;line-height:1.6;white-space:pre-wrap;color:var(--text);max-height:240px;overflow-y:auto;"></div>
         <div class="modal-actions">
             <button class="modal-btn ghost" id="email-modal-close" style="cursor:none;">Close</button>
@@ -1517,8 +1517,8 @@
 <!-- ========== simulated credentials email popup ========== -->
 <div class="modal-overlay" id="invite-modal">
     <div class="modal-box" style="max-width: 500px;">
-        <div class="modal-title">Worker Approved!</div>
-        <div class="modal-sub">An automated email containing credentials has been forwarded to the candidate.</div>
+        <div class="modal-title">Worker Approved</div>
+        <div class="modal-sub">Login credentials have been sent to the candidate via email.</div>
         
         <div style="margin: 20px 0; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 15px; border-radius: 6px;">
             <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;">
@@ -1539,7 +1539,7 @@
         </div>
 
         <div class="modal-warn">
-            <strong>Security Warning:</strong> The candidate will be prompted to set up their custom permanent password and 2FA PIN code during their first sign-in.
+            <strong>Note:</strong> The candidate will be prompted to set a permanent password and 2FA PIN on first sign-in.
         </div>
 
         <div class="modal-actions">
@@ -1608,6 +1608,18 @@
         <li style="--stagger-index: 4;"><a href="index.html" class="drawer-link" style="color:var(--gold); border-color:rgba(212,175,55,.1);"><span class="drawer-num">04</span> Exit to Site</a></li>
         <li style="--stagger-index: 5;"><button class="drawer-link" id="admin-mobile-drawer-logout-btn" style="color:var(--red); border-color:rgba(231,76,60,.1);"><span class="drawer-num">05</span> Lock Panel</button></li>
     </ul>
+</div>
+
+<!-- Custom Confirm Modal -->
+<div class="modal-overlay" id="confirm-modal">
+    <div class="modal-box" style="max-width: 400px;">
+        <div class="modal-title" id="confirm-title">Confirm</div>
+        <div class="modal-sub" id="confirm-message" style="margin-bottom: 24px;">Are you sure?</div>
+        <div class="modal-actions">
+            <button class="modal-btn ghost" id="confirm-cancel-btn" style="cursor:none;">Cancel</button>
+            <button class="modal-btn primary" id="confirm-ok-btn" style="cursor:none;background:#e74c3c;">Delete</button>
+        </div>
+    </div>
 </div>
 
 <script type="module" src="admin.js"></script>

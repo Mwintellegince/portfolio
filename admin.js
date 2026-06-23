@@ -139,6 +139,29 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => el.remove(), 3600);
     }
 
+    function customConfirm(msg) {
+        return new Promise((resolve) => {
+            const overlay = document.getElementById('confirm-modal');
+            const titleEl = document.getElementById('confirm-title');
+            const msgEl = document.getElementById('confirm-message');
+            const okBtn = document.getElementById('confirm-ok-btn');
+            const cancelBtn = document.getElementById('confirm-cancel-btn');
+            if (!overlay || !okBtn || !cancelBtn) { resolve(false); return; }
+            if (titleEl) titleEl.textContent = 'Confirm';
+            if (msgEl) msgEl.textContent = msg;
+            overlay.classList.add('open');
+            const cleanup = () => {
+                overlay.classList.remove('open');
+                okBtn.removeEventListener('click', onOk);
+                cancelBtn.removeEventListener('click', onCancel);
+            };
+            const onOk = () => { cleanup(); resolve(true); };
+            const onCancel = () => { cleanup(); resolve(false); };
+            okBtn.addEventListener('click', onOk);
+            cancelBtn.addEventListener('click', onCancel);
+        });
+    }
+
     /* =====================================================================
        LOCK / AUTH  (SHA-256 salted hash)
     ===================================================================== */
@@ -405,6 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setText('nav-badge-history', history);
         setText('pending-pill', pending);
         setText('history-pill', history);
+        setText('nav-badge-users', getUsers().length);
 
         // Applications badges
         const apps = getApplications();
@@ -1348,7 +1372,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window._adminDeleteUser = async function(idx) {
-        if (!confirm('Are you sure you want to delete this user? This cannot be undone.')) return;
+        const confirmed = await customConfirm('Delete this user? This cannot be undone.');
+        if (!confirmed) return;
         const users = getUsers();
         const u = users[idx];
         if (!u) return;
@@ -1456,7 +1481,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window._adminDeleteWorker = async function(idx) {
-        if (!confirm('Are you sure you want to remove this worker?')) return;
+        const confirmed = await customConfirm('Remove this worker? This cannot be undone.');
+        if (!confirmed) return;
         const workers = getWorkers();
         const w = workers[idx];
         if (!w) return;
@@ -1519,43 +1545,56 @@ document.addEventListener('DOMContentLoaded', () => {
     const BREVO_SENDER = { name: 'MW Intelligence', email: 'noreply@mwintellegince.com' };
 
     function buildEmailBody(order, action) {
-        if (action === 'approved') {
-            return `
-                <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;">
-                    <div style="background:#d4af37;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
-                        <h1 style="color:#0a0a0c;margin:0;font-size:22px;">Order Approved ✓</h1>
-                    </div>
-                    <div style="background:#111114;padding:30px;border:1px solid rgba(255,255,255,.07);border-top:none;border-radius:0 0 8px 8px;">
-                        <p style="color:#f0ede6;font-size:15px;">Dear <strong>${esc(order.name)}</strong>,</p>
-                        <p style="color:#f0ede6;font-size:15px;">We are pleased to inform you that your order has been <strong style="color:#2ecc71;">approved</strong>!</p>
-                        <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:16px;margin:20px 0;">
-                            <p style="color:#6b6b78;margin:4px 0;font-size:13px;">Plan: <span style="color:#f0ede6;font-weight:600;">${esc(order.plan || '—')}</span></p>
-                            <p style="color:#6b6b78;margin:4px 0;font-size:13px;">Price: <span style="color:#d4af37;font-weight:600;">${esc(order.price || '—')}</span></p>
-                            <p style="color:#6b6b78;margin:4px 0;font-size:13px;">Payment: <span style="color:#f0ede6;">${esc(order.paymentMethod || '—')}</span></p>
-                        </div>
-                        <p style="color:#f0ede6;font-size:15px;">Thank you for choosing MW Intelligence. We will begin working on your project shortly.</p>
-                        <p style="color:#6b6b78;font-size:13px;margin-top:24px;">Best regards,<br><strong style="color:#f0ede6;">Mohamed Abdelhamid</strong><br>MW Intelligence</p>
-                    </div>
-                </div>`;
-        } else {
-            return `
-                <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;">
-                    <div style="background:#e74c3c;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
-                        <h1 style="color:#fff;margin:0;font-size:22px;">Order Rejected</h1>
-                    </div>
-                    <div style="background:#111114;padding:30px;border:1px solid rgba(255,255,255,.07);border-top:none;border-radius:0 0 8px 8px;">
-                        <p style="color:#f0ede6;font-size:15px;">Dear <strong>${esc(order.name)}</strong>,</p>
-                        <p style="color:#f0ede6;font-size:15px;">We regret to inform you that your order has been <strong style="color:#e74c3c;">rejected</strong> and a refund has been initiated.</p>
-                        <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:16px;margin:20px 0;">
-                            <p style="color:#6b6b78;margin:4px 0;font-size:13px;">Plan: <span style="color:#f0ede6;font-weight:600;">${esc(order.plan || '—')}</span></p>
-                            <p style="color:#6b6b78;margin:4px 0;font-size:13px;">Price: <span style="color:#e74c3c;font-weight:600;">${esc(order.price || '—')}</span></p>
-                            <p style="color:#6b6b78;margin:4px 0;font-size:13px;">Payment: <span style="color:#f0ede6;">${esc(order.paymentMethod || '—')}</span></p>
-                        </div>
-                        <p style="color:#f0ede6;font-size:15px;">If you have any questions, please don't hesitate to contact us.</p>
-                        <p style="color:#6b6b78;font-size:13px;margin-top:24px;">Best regards,<br><strong style="color:#f0ede6;">Mohamed Abdelhamid</strong><br>MW Intelligence</p>
-                    </div>
-                </div>`;
-        }
+        const accent = action === 'approved' ? '#d4af37' : '#e74c3c';
+        const statusText = action === 'approved' ? 'Approved' : 'Rejected';
+        const statusMsg = action === 'approved'
+            ? 'Your order has been approved. We\'ll begin shortly.'
+            : 'Your order has been rejected. A refund has been initiated.';
+        return `
+            <table cellpadding="0" cellspacing="0" style="width:100%;background:#0a0a0c;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+                <tr><td style="padding:40px 16px;">
+                    <table cellpadding="0" cellspacing="0" style="max-width:480px;margin:0 auto;background:#111114;border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;">
+                        <tr>
+                            <td style="padding:32px 32px 0;">
+                                <div style="width:40px;height:40px;border-radius:50%;background:${accent}20;display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+                                    <span style="color:${accent};font-size:18px;font-weight:700;">M</span>
+                                </div>
+                                <h1 style="color:#f0ede6;font-size:20px;font-weight:600;margin:0 0 4px;letter-spacing:-.3px;">Order ${statusText}</h1>
+                                <p style="color:#6b6b78;font-size:14px;margin:0 0 24px;line-height:1.5;">${statusMsg}</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0 32px;">
+                                <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:8px;padding:20px;">
+                                    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                                        <span style="color:#6b6b78;font-size:13px;">Client</span>
+                                        <span style="color:#f0ede6;font-size:13px;font-weight:500;">${esc(order.name || '—')}</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                                        <span style="color:#6b6b78;font-size:13px;">Plan</span>
+                                        <span style="color:#f0ede6;font-size:13px;font-weight:500;">${esc(order.plan || '—')}</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                                        <span style="color:#6b6b78;font-size:13px;">Amount</span>
+                                        <span style="color:${accent};font-size:13px;font-weight:600;">${esc(order.price || '—')}</span>
+                                    </div>
+                                    <div style="display:flex;justify-content:space-between;padding:8px 0;">
+                                        <span style="color:#6b6b78;font-size:13px;">Payment</span>
+                                        <span style="color:#f0ede6;font-size:13px;font-weight:500;">${esc(order.paymentMethod || '—')}</span>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:24px 32px 32px;">
+                                <div style="height:1px;background:rgba(255,255,255,.04);margin-bottom:20px;"></div>
+                                <p style="color:#6b6b78;font-size:12px;margin:0 0 4px;line-height:1.5;">MW Intelligence &mdash; ${esc(order.email || '')}</p>
+                                <p style="color:#4a4a55;font-size:11px;margin:0;">This is an automated message. Please do not reply directly.</p>
+                            </td>
+                        </tr>
+                    </table>
+                </td></tr>
+            </table>`;
     }
 
     async function sendEmail(order, action) {
