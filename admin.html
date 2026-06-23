@@ -1009,10 +1009,15 @@
 
         <!-- ── OVERVIEW PAGE ── -->
         <div class="page active" id="page-overview">
-            <div class="page-header">
-                <div class="page-eyebrow">Dashboard</div>
-                <h1 class="page-title">Overview</h1>
-                <p class="page-sub">Real-time revenue and order metrics.</p>
+            <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+                <div>
+                    <div class="page-eyebrow">Dashboard</div>
+                    <h1 class="page-title">Overview</h1>
+                    <p class="page-sub">Real-time revenue and order metrics.</p>
+                </div>
+                <div>
+                    <button id="admin-reset-db-btn" class="modal-btn reject" style="background:#e74c3c; border-color:#c0392b; cursor:none;">Reset Database</button>
+                </div>
             </div>
 
             <div class="stats-row" id="stats-row">

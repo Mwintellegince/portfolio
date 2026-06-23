@@ -2037,6 +2037,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Reset Database Click Handler
+    const resetDbBtn = document.getElementById('admin-reset-db-btn');
+    if (resetDbBtn) {
+        resetDbBtn.addEventListener('click', async () => {
+            const confirmed = await customConfirm('CRITICAL ACTION: Reset the entire database? This will delete all users, workers, applications, and orders from Firestore and clear local storage. This cannot be undone!');
+            if (!confirmed) return;
+            
+            const confirmed2 = await customConfirm('Are you absolutely sure you want to proceed?');
+            if (!confirmed2) return;
+
+            resetDbBtn.textContent = 'Purging...';
+            resetDbBtn.disabled = true;
+
+            try {
+                // Clear localStorage
+                localStorage.clear();
+                
+                // If firebase is active, delete collections
+                if (isFirebaseActive && db) {
+                    const collections = ['users', 'workers', 'applications', 'orders', 'announcements'];
+                    for (const col of collections) {
+                        const snap = await db.collection(col).get();
+                        const batch = db.batch();
+                        snap.forEach(doc => {
+                            batch.delete(doc.ref);
+                        });
+                        await batch.commit();
+                    }
+                }
+                
+                toast('Database reset successfully. Reloading page...', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } catch (err) {
+                console.error('Reset database error:', err);
+                toast('Error resetting database: ' + err.message, 'error');
+                resetDbBtn.textContent = 'Reset Database';
+                resetDbBtn.disabled = false;
+            }
+        });
+    }
+
     // Cross-tab live data synchronization
     window.addEventListener('storage', (e) => {
         if (['client_users', 'client_orders', 'client_applications', 'client_workers', 'client_announcements'].includes(e.key)) {
