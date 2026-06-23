@@ -673,7 +673,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (err) {
                     console.error("Firestore worker search error:", err);
                 }
-            } else {
+            } 
+            
+            // ALWAYS check local storage as a fallback, as Admin might have failed to write to Firestore due to permissions
+            if (!isWorker) {
                 let localWorkers = [];
                 try { localWorkers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
                 const localW = localWorkers.find(w => w.email && w.email.toLowerCase() === email);
