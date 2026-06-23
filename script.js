@@ -3012,7 +3012,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let uploadedCvBase64 = null;
 
     // Toggle Modal
-    function openApplyModal(e) {
+    async function openApplyModal(e) {
         if (e) e.preventDefault();
 
         if (!currentUser) {
@@ -3021,15 +3021,63 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const email = currentUser.email.toLowerCase();
+
+        // Check if they are already an active worker
+        let isWorker = false;
+        let workerObj = null;
+
+        if (isFirebaseActive && typeof db !== 'undefined' && db) {
+            try {
+                const docId = 'work_' + email.replace(/\./g, '_');
+                const doc = await db.collection('workers').doc(docId).get();
+                if (doc.exists) {
+                    isWorker = true;
+                    workerObj = { id: doc.id, ...doc.data() };
+                }
+            } catch (err) {}
+        }
+        if (!isWorker) {
+            let localWorkers = [];
+            try { localWorkers = JSON.parse(localStorage.getItem('client_workers') || '[]'); } catch {}
+            const localW = localWorkers.find(w => w.email && w.email.toLowerCase() === email);
+            if (localW) {
+                isWorker = true;
+                workerObj = localW;
+            }
+        }
+
+        if (isWorker) {
+            sessionStorage.setItem('workerOk', '1');
+            sessionStorage.setItem('workerEmail', email);
+            localStorage.setItem('active_worker_profile', JSON.stringify(workerObj));
+            showNotification('You are already an approved team member. Redirecting to Worker Dashboard...', 'success');
+            setTimeout(() => { window.location.href = 'worker.html'; }, 1000);
+            return;
+        }
+
         // Check if user already applied
-        let existingApps = [];
-        try { existingApps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
-        const userApp = existingApps.find(a => a.email && currentUser.email && a.email.toLowerCase() === currentUser.email.toLowerCase() && (a.status === 'pending' || a.status === 'approved'));
-        if (userApp) {
-            const statusMsg = userApp.status === 'approved'
-                ? 'You have already been accepted as a team member. Check your profile for next steps.'
-                : 'You already have a pending application. You will be contacted when there is an update.';
-            showNotification(statusMsg, 'warn');
+        let isPending = false;
+        if (isFirebaseActive && typeof db !== 'undefined' && db) {
+            try {
+                const snapshot = await db.collection('applications').get();
+                snapshot.forEach(d => {
+                    if (d.data().email && d.data().email.toLowerCase() === email) {
+                        isPending = true;
+                    }
+                });
+            } catch (err) {}
+        }
+        if (!isPending) {
+            let existingApps = [];
+            try { existingApps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
+            if (existingApps.some(a => a.email && a.email.toLowerCase() === email)) {
+                isPending = true;
+            }
+        }
+
+        if (isPending) {
+            showNotification('Your application is currently under review by an administrator.', 'info');
             return;
         }
         
