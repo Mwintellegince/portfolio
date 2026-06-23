@@ -65,42 +65,203 @@
             align-items: center;
             justify-content: center;
             padding: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .portal-lock-container::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
         .portal-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+            background: rgba(20, 20, 24, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
             width: 100%;
-            max-width: 420px;
-            padding: 40px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            max-width: 440px;
+            padding: 48px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 100px rgba(0, 0, 0, 0.2);
             position: relative;
+            overflow: hidden;
+            transition: border-color 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        .portal-card:hover {
+            border-color: rgba(212, 175, 55, 0.25);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7), 0 0 100px rgba(212, 175, 55, 0.04);
+        }
+
+        .portal-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
         }
 
         .portal-eyebrow {
             font-family: 'JetBrains Mono', monospace;
             color: var(--accent);
-            font-size: 0.72rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 8px;
+            letter-spacing: 0.2em;
+            margin-bottom: 12px;
+            text-align: center;
+            opacity: 0.95;
         }
 
         .portal-title {
             font-family: 'Syne', sans-serif;
-            font-size: 1.8rem;
+            font-size: 2.2rem;
             font-weight: 800;
-            margin: 0 0 10px 0;
-            letter-spacing: -0.02em;
+            margin: 0 0 12px 0;
+            letter-spacing: -0.03em;
+            text-align: center;
+            background: linear-gradient(135deg, #ffffff 30%, #a1a1aa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .portal-sub {
-            font-size: 0.8rem;
+            font-size: 0.88rem;
             color: var(--text-muted);
-            line-height: 1.5;
-            margin-bottom: 28px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+            text-align: center;
         }
+
+        /* checkout form overrides for portal */
+        .checkout-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .form-group input {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 0.9rem;
+        }
+
+        .form-group input:focus {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+        }
+
+        .form-group:focus-within label {
+            color: var(--accent);
+        }
+
+        .checkout-submit-btn {
+            width: 100%;
+            margin-top: 12px;
+            padding: 16px;
+            background: linear-gradient(135deg, #d4af37, #b89326);
+            border: none;
+            border-radius: 8px;
+            color: #000000;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+            position: relative;
+            z-index: 1;
+        }
+
+        .checkout-submit-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #f7d768, #d4af37);
+            border-radius: 8px;
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+        }
+
+        .checkout-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+        }
+
+        .checkout-submit-btn:hover::before {
+            opacity: 1;
+        }
+
+        .checkout-submit-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.2);
+        }
+
+        .portal-info-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .portal-info-item {
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .portal-info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .portal-info-item strong {
+            color: var(--text-primary);
+        }
+
 
         /* Portal Dashboard Layout */
         .dashboard-container {
@@ -239,10 +400,17 @@
 
         /* Decoy lock error */
         .lock-error {
-            color: var(--red);
-            font-size: 0.75rem;
-            margin-top: 10px;
+            background: rgba(231, 76, 60, 0.08);
+            border: 1px solid rgba(231, 76, 60, 0.2);
+            color: #ff6b6b;
+            font-size: 0.78rem;
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin-top: 16px;
+            text-align: center;
             display: none;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.4;
         }
         .lock-error.show { display: block; }
 
@@ -320,7 +488,7 @@
                         <label for="login-password">Password</label>
                         <input type="password" id="login-password" required placeholder="Security key...">
                     </div>
-                    <button type="submit" class="checkout-submit-btn" style="width: 100%; margin-top: 10px;">Sign In</button>
+                    <button type="submit" class="checkout-submit-btn">Sign In</button>
                     <div class="lock-error" id="login-error">Invalid credentials. Access denied.</div>
                 </form>
             </div>
@@ -333,10 +501,10 @@
                 <form id="portal-setup-form" class="checkout-form">
                     <input type="hidden" id="su-email">
                     <input type="hidden" id="su-appid">
-                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.6;">
-                        <div style="color: var(--text-muted);">Name: <strong id="su-name" style="color: var(--text);"></strong></div>
-                        <div style="color: var(--text-muted);">Email: <strong id="su-email-text" style="color: var(--text);"></strong></div>
-                        <div style="color: var(--text-muted);">Major: <strong id="su-major" style="color: var(--text);"></strong></div>
+                    <div class="portal-info-box">
+                        <div class="portal-info-item">Name: <strong id="su-name"></strong></div>
+                        <div class="portal-info-item">Email: <strong id="su-email-text"></strong></div>
+                        <div class="portal-info-item">Major: <strong id="su-major"></strong></div>
                     </div>
                     <div class="form-group">
                         <label for="su-password">New Permanent Password</label>
@@ -350,7 +518,7 @@
                         <label for="su-pin">Create 6-Digit Security PIN (2FA)</label>
                         <input type="password" id="su-pin" required pattern="\d{6}" maxlength="6" placeholder="e.g. 123456" style="letter-spacing: 0.5em; text-align: center; font-size: 1.1rem; font-family: monospace;">
                     </div>
-                    <button type="submit" class="checkout-submit-btn" style="width: 100%; margin-top: 10px;">Save & Unlock Dashboard</button>
+                    <button type="submit" class="checkout-submit-btn">Save & Unlock Dashboard</button>
                     <div class="lock-error" id="setup-error">Passwords do not match or PIN is invalid.</div>
                 </form>
             </div>
@@ -367,7 +535,7 @@
                         <label style="text-align: center; display: block;">6-Digit Security PIN</label>
                         <input type="password" id="login-2fa-pin" required pattern="\d{6}" maxlength="6" placeholder="••••••" style="letter-spacing: 0.8em; text-align: center; font-size: 1.5rem; font-family: monospace; padding: 12px 0;">
                     </div>
-                    <button type="submit" class="checkout-submit-btn" style="width: 100%; margin-top: 10px;">Verify PIN</button>
+                    <button type="submit" class="checkout-submit-btn">Verify PIN</button>
                     <div class="lock-error" id="2fa-error">Invalid Security PIN code. Access denied.</div>
                 </form>
             </div>
