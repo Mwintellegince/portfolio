@@ -722,11 +722,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Render orders list
         if (isFirebaseActive && db) {
             userOrdersListener = db.collection('orders')
-                .where('email', '==', currentUser.email.toLowerCase())
                 .onSnapshot((snapshot) => {
                     let orders = [];
                     snapshot.forEach(doc => {
-                        orders.push({ id: doc.id, ...doc.data() });
+                        const data = doc.data();
+                        if (data.email && currentUser.email && data.email.toLowerCase() === currentUser.email.toLowerCase()) {
+                            orders.push({ id: doc.id, ...data });
+                        }
                     });
                     // Sort by submitted time descending
                     orders.sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
@@ -742,11 +744,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Render applications list
         if (isFirebaseActive && db) {
             userAppsListener = db.collection('applications')
-                .where('email', '==', currentUser.email.toLowerCase())
                 .onSnapshot((snapshot) => {
                     let apps = [];
                     snapshot.forEach(doc => {
-                        apps.push({ id: doc.id, ...doc.data() });
+                        const data = doc.data();
+                        if (data.email && currentUser.email && data.email.toLowerCase() === currentUser.email.toLowerCase()) {
+                            apps.push({ id: doc.id, ...data });
+                        }
                     });
                     apps.sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
                     displayUserApplications(apps);
