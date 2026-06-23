@@ -806,7 +806,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('users-tbody');
         if (!tbody) return;
 
-        const users = getUsers();
+        let users = getUsers();
+        if (!users.length && isFirebaseActive && db) {
+            // Direct Firestore query fallback — ensures users appear on fresh load
+            db.collection('users').get().then(snapshot => {
+                const firestoreUsers = [];
+                snapshot.forEach(doc => firestoreUsers.push({ id: doc.id, ...doc.data() }));
+                if (firestoreUsers.length) {
+                    localStorage.setItem('client_users', JSON.stringify(firestoreUsers));
+                    renderUsers();
+                    return;
+                }
+            }).catch(() => {});
+        }
+
         if (!users.length) {
             tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No users registered yet.</td></tr>';
             return;
@@ -838,7 +851,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = document.getElementById('workers-tbody');
         if (!tbody) return;
 
-        const workers = getWorkers();
+        let workers = getWorkers();
+        if (!workers.length && isFirebaseActive && db) {
+            db.collection('workers').get().then(snapshot => {
+                const firestoreWorkers = [];
+                snapshot.forEach(doc => firestoreWorkers.push({ id: doc.id, ...doc.data() }));
+                if (firestoreWorkers.length) {
+                    localStorage.setItem('client_workers', JSON.stringify(firestoreWorkers));
+                    renderWorkers();
+                    return;
+                }
+            }).catch(() => {});
+        }
+
         if (!workers.length) {
             tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No workers registered yet.</td></tr>';
             return;
