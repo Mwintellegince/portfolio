@@ -4415,3 +4415,12 @@ body.has-error-notif #custom-cursor-ring {
 .badge.approved { background: rgba(46,204,113,.1); color: var(--green); border: 1px solid rgba(46,204,113,.2); }
 .badge.success  { background: rgba(46,204,113,.1); color: var(--green); border: 1px solid rgba(46,204,113,.2); }
 .badge.rejected { background: rgba(231,76,60,.1);  color: var(--red);   border: 1px solid rgba(231,76,60,.2); }
+
+/* Navigation Profile Icon Hover highlights */
+.nav-link:hover .profile-nav-icon {
+    border-color: #fff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+.nav-link:hover .profile-nav-icon svg {
+    stroke: #fff !important;
+}
