@@ -608,7 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await syncOrderUpdate(orders[idx]);
     };
 
-    window._adminReject = function(idx) {
+    window._adminReject = async function(idx) {
         const orders = getOrders();
         if (!orders[idx]) return;
         const order = orders[idx];
