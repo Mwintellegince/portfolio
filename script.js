@@ -206,6 +206,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!user && profileModal) {
             profileModal.classList.remove('active');
         }
+
+        // Show/hide announcement banner based on auth state
+        if (user) {
+            loadActiveAnnouncement();
+        } else {
+            displayAnnouncement(null);
+        }
     }
 
     // Initialize Auth Observer
@@ -2702,10 +2709,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const applyQuestionsContainer = document.getElementById('apply-questions-container');
     const applyCvInput = document.getElementById('apply-cv');
     const applyForm = document.getElementById('apply-form');
-    const announcementBanner = document.getElementById('announcement-banner');
-    const bannerText = document.getElementById('banner-text');
-    const bannerActionBtn = document.getElementById('banner-action-btn');
-    const closeBannerBtn = document.getElementById('close-banner');
 
     let uploadedCvBase64 = null;
 
@@ -2907,9 +2910,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Announcement Banner Management
     function loadActiveAnnouncement() {
+        if (!currentUser) {
+            displayAnnouncement(null);
+            return;
+        }
         if (typeof isFirebaseActive !== 'undefined' && isFirebaseActive && typeof db !== 'undefined' && db) {
             db.collection('announcements').where('isActive', '==', true).limit(1).get()
                 .then(snapshot => {
+                    if (!currentUser) {
+                        displayAnnouncement(null);
+                        return;
+                    }
                     if (!snapshot.empty) {
                         const doc = snapshot.docs[0];
                         displayAnnouncement({ id: doc.id, ...doc.data() });
@@ -2919,7 +2930,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .catch(err => {
                     console.error('Error fetching announcement from firestore:', err);
-                    loadLocalActiveAnnouncement();
+                    if (currentUser) {
+                        loadLocalActiveAnnouncement();
+                    } else {
+                        displayAnnouncement(null);
+                    }
                 });
         } else {
             loadLocalActiveAnnouncement();
@@ -2927,6 +2942,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function loadLocalActiveAnnouncement() {
+        if (!currentUser) {
+            displayAnnouncement(null);
+            return;
+        }
         let announcements = [];
         try { announcements = JSON.parse(localStorage.getItem('client_announcements') || '[]'); } catch {}
         const active = announcements.find(a => a.isActive);
@@ -2947,6 +2966,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayAnnouncement(ann) {
+        const announcementBanner = document.getElementById('announcement-banner');
+        const bannerText = document.getElementById('banner-text');
+        const bannerActionBtn = document.getElementById('banner-action-btn');
+        const closeBannerBtn = document.getElementById('close-banner');
+
         if (!ann || !announcementBanner) {
             if (announcementBanner) announcementBanner.style.display = 'none';
             document.body.classList.remove('has-announcement');
@@ -2960,9 +2984,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        bannerText.textContent = ann.text;
+        if (bannerText) bannerText.textContent = ann.text;
         
-        if (ann.linkText) {
+        if (ann.linkText && bannerActionBtn) {
             bannerActionBtn.textContent = ann.linkText + ' →';
             bannerActionBtn.style.display = 'inline-block';
             
@@ -2975,7 +2999,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.open(ann.linkUrl, '_blank');
                 }
             };
-        } else {
+        } else if (bannerActionBtn) {
             bannerActionBtn.style.display = 'none';
         }
 
