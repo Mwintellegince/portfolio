@@ -101,9 +101,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const profileLogoutBtn = document.getElementById('profile-logout-btn');
     const profileOrdersContainer = document.getElementById('profile-orders-container');
 
+    const authStatusMsg = document.getElementById('auth-status-msg');
+
+    function showAuthStatus(message, type = 'error') {
+        if (!authStatusMsg) return;
+        authStatusMsg.textContent = message;
+        authStatusMsg.classList.remove('hidden');
+        if (type === 'error' || type === 'warn') {
+            authStatusMsg.style.borderLeftColor = 'var(--red)';
+            authStatusMsg.style.color = 'var(--red)';
+        } else {
+            authStatusMsg.style.borderLeftColor = 'var(--green)';
+            authStatusMsg.style.color = 'var(--green)';
+        }
+    }
+
+    function clearAuthStatus() {
+        if (authStatusMsg) {
+            authStatusMsg.textContent = '';
+            authStatusMsg.classList.add('hidden');
+        }
+    }
+
     // Tab Switching
     if (tabSignIn && tabSignUp && signinForm && signupForm) {
         tabSignIn.addEventListener('click', () => {
+            clearAuthStatus();
             tabSignIn.classList.add('active');
             tabSignUp.classList.remove('active');
             signinForm.classList.remove('hidden');
@@ -111,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('auth-modal-title').textContent = "Sign In";
         });
         tabSignUp.addEventListener('click', () => {
+            clearAuthStatus();
             tabSignUp.classList.add('active');
             tabSignIn.classList.remove('active');
             signupForm.classList.remove('hidden');
@@ -121,6 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openAuthModal() {
         if (authModal) {
+            clearAuthStatus();
             authModal.classList.add('active');
             playTone(550, 'sine', 0.1, 0.05);
         }
@@ -128,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function closeAuthModal() {
         if (authModal) {
+            clearAuthStatus();
             authModal.classList.remove('active');
             playTone(400, 'sine', 0.1, 0.05);
             // Reset welcome success container state back to original form view
