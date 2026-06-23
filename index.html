@@ -13,6 +13,10 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Background Floating Glow Orbs -->
+    <div class="glow-orb glow-orb-1"></div>
+    <div class="glow-orb glow-orb-2"></div>
+
     <!-- Ambient Background Canvas (glowing slow floaters) -->
     <canvas class="ambient-canvas" id="ambient-canvas"></canvas>
     <!-- ═══════════════════════════════════════════════════════════════
@@ -102,11 +106,12 @@
                 <li><a href="#now" class="nav-link magnetic" data-dist="10"><span class="nav-num">01</span> Now</a></li>
                 <li><a href="#work" class="nav-link magnetic" data-dist="10"><span class="nav-num">02</span> Work</a></li>
                 <li><a href="#plans" class="nav-link magnetic" data-dist="10"><span class="nav-num">03</span> Plans</a></li>
-                <li><a href="#experience" class="nav-link magnetic" data-dist="10"><span class="nav-num">04</span> Experience</a></li>
-                <li><a href="#contact" class="nav-link magnetic" data-dist="10"><span class="nav-num">05</span> Contact</a></li>
-                <li><a href="#" id="menu-policies-btn" class="nav-link magnetic" data-dist="10"><span class="nav-num">06</span> Policies</a></li>
-                <li><a href="#" id="menu-apply-btn" class="nav-link magnetic" data-dist="10"><span class="nav-num">07</span> Careers</a></li>
-                <li><a href="#" id="menu-auth-btn" class="nav-link magnetic" data-dist="10"><span class="nav-num">08</span> Sign In</a></li>
+                <li><a href="#team" class="nav-link magnetic" data-dist="10"><span class="nav-num">04</span> Team</a></li>
+                <li><a href="#experience" class="nav-link magnetic" data-dist="10"><span class="nav-num">05</span> Experience</a></li>
+                <li><a href="#contact" class="nav-link magnetic" data-dist="10"><span class="nav-num">06</span> Contact</a></li>
+                <li><a href="#" id="menu-policies-btn" class="nav-link magnetic" data-dist="10"><span class="nav-num">07</span> Policies</a></li>
+                <li><a href="#" id="menu-apply-btn" class="nav-link magnetic" data-dist="10"><span class="nav-num">08</span> Careers</a></li>
+                <li><a href="#" id="menu-auth-btn" class="nav-link magnetic" data-dist="10"><span class="nav-num">09</span> Sign In</a></li>
             </ul>
         </nav>
         <!-- Hamburger (visible on mobile only) -->
@@ -442,11 +447,97 @@
             </div>
         </section>
 
+        <!-- Team Section -->
+        <section id="team" class="team-section reveal-on-scroll">
+            <div class="section-container">
+                <div class="section-header">
+                    <span class="section-num">04 /</span>
+                    <h2 class="section-title">The Team</h2>
+                    <p class="section-desc" style="max-width: 600px; margin-top: 15px; font-size: 0.95rem; color: var(--text-muted); line-height: 1.6;">
+                        A highly synchronized collective of experts collaborating across departments to design, code, and deploy high-performance applications.
+                    </p>
+                </div>
+                
+                <div class="team-grid">
+                    <!-- Visual division -->
+                    <div class="team-card">
+                        <div class="team-card-glow"></div>
+                        <div class="team-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%;">
+                                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" />
+                                <path d="M12 8C14.2091 8 16 9.79086 16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8Z" />
+                                <path d="M12 2V6" />
+                                <path d="M12 18V22" />
+                                <path d="M4.93 4.93005L7.76 7.76005" />
+                                <path d="M16.24 16.24L19.07 19.07" />
+                                <path d="M2 12H6" />
+                                <path d="M18 12H22" />
+                                <path d="M19.07 4.93005L16.24 7.76005" />
+                                <path d="M7.76 16.24L4.93 19.07" />
+                            </svg>
+                        </div>
+                        <h3 class="team-card-title">Visual Design</h3>
+                        <p class="team-card-desc">
+                            Responsible for structural styling, graphics, color harmonies, typography frameworks, and brand systems.
+                        </p>
+                        <div class="team-tags">
+                            <span>Figma</span>
+                            <span>SVG</span>
+                            <span>Branding</span>
+                        </div>
+                    </div>
+
+                    <!-- Web engineering division -->
+                    <div class="team-card">
+                        <div class="team-card-glow"></div>
+                        <div class="team-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%;">
+                                <path d="M16 18L22 12L16 6" />
+                                <path d="M8 6L2 12L8 18" />
+                                <path d="M14 4L10 20" />
+                            </svg>
+                        </div>
+                        <h3 class="team-card-title">Web Engineering</h3>
+                        <p class="team-card-desc">
+                            Architects of user experience, implementing responsive web interfaces, interactive layouts, client logic, and animations.
+                        </p>
+                        <div class="team-tags">
+                            <span>React</span>
+                            <span>Vite</span>
+                            <span>GSAP</span>
+                        </div>
+                    </div>
+
+                    <!-- Systems engineering division -->
+                    <div class="team-card">
+                        <div class="team-card-glow"></div>
+                        <div class="team-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%;">
+                                <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                                <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                                <line x1="6" y1="6" x2="6.01" y2="6" />
+                                <line x1="6" y1="18" x2="6.01" y2="18" />
+                            </svg>
+                        </div>
+                        <h3 class="team-card-title">Systems Engineering</h3>
+                        <p class="team-card-desc">
+                            Builds backend infrastructure, database engines, APIs, cryptographic handlers, server workflows, and hosting deployments.
+                        </p>
+                        <div class="team-tags">
+                            <span>Node.js</span>
+                            <span>Firebase</span>
+                            <span>Cloud</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Experience Section -->
         <section id="experience" class="experience-section reveal-on-scroll">
             <div class="section-container">
                 <div class="section-header">
-                    <span class="section-num">04 /</span>
+                    <span class="section-num">05 /</span>
                     <h2 class="section-title">Timeline</h2>
                 </div>
                 <div class="timeline">

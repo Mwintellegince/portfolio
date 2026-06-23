@@ -193,14 +193,14 @@ document.addEventListener('DOMContentLoaded', () => {
         currentUser = user;
         if (menuAuthBtn) {
             menuAuthBtn.innerHTML = user ? `
-                <span class="nav-num">08</span>
+                <span class="nav-num">09</span>
                 <span class="profile-nav-icon" style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--accent); background: rgba(212, 175, 55, 0.05); padding: 2px; vertical-align: middle; transition: all 0.2s; margin-top: -2px;">
                     <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; fill: none; stroke: var(--accent); stroke-width: 2.2; transition: stroke 0.2s;">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                         <circle cx="12" cy="7" r="4" />
                     </svg>
                 </span>
-            ` : `<span class="nav-num">08</span> Sign In`;
+            ` : `<span class="nav-num">09</span> Sign In`;
         }
         setFormPrefills(user);
         if (!user && profileModal) {

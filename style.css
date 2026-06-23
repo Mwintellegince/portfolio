@@ -4424,3 +4424,154 @@ body.has-error-notif #custom-cursor-ring {
 .nav-link:hover .profile-nav-icon svg {
     stroke: #fff !important;
 }
+
+/* ==========================================================================
+   AESTHETIC UPGRADES: GLOW ORBS, TEAM SECTION, & CARD REFINEMENTS
+   ========================================================================== */
+
+/* Background Floating Glow Orbs */
+.glow-orb {
+    position: fixed;
+    width: 45vw;
+    height: 45vw;
+    border-radius: 50%;
+    filter: blur(150px);
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: -2;
+    mix-blend-mode: screen;
+    animation: orbFloat 25s infinite ease-in-out alternate;
+}
+.glow-orb-1 {
+    background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+    top: -10%;
+    left: -10%;
+}
+.glow-orb-2 {
+    background: radial-gradient(circle, #3b82f6 0%, transparent 70%);
+    bottom: -10%;
+    right: -10%;
+    animation-delay: -5s;
+}
+@keyframes orbFloat {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(5vw, 5vh) scale(1.1); }
+    100% { transform: translate(-3vw, -2vh) scale(0.95); }
+}
+
+/* Team Section Styling */
+.team-section {
+    padding: 100px 0;
+    border-top: 1px solid var(--border-color);
+}
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    margin-top: 50px;
+}
+@media (max-width: 992px) {
+    .team-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 768px) {
+    .team-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.team-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 35px;
+    transition: var(--transition-smooth);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.team-card-glow {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    top: -30px;
+    right: -30px;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.6;
+    transition: var(--transition-smooth);
+}
+.team-icon {
+    color: var(--accent);
+    width: 36px;
+    height: 36px;
+    transition: var(--transition-fast);
+}
+.team-card-title {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: var(--text-primary);
+}
+.team-card-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0;
+}
+.team-tags {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    text-transform: uppercase;
+}
+.team-tags span {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    padding: 4px 10px;
+    border-radius: 4px;
+    transition: var(--transition-fast);
+}
+.team-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--accent-glow) !important;
+    box-shadow: 0 15px 40px rgba(212, 175, 55, 0.05), inset 0 0 15px rgba(255, 255, 255, 0.02);
+}
+.team-card:hover .team-card-glow {
+    opacity: 1 !important;
+    transform: scale(1.2);
+}
+.team-card:hover .team-icon {
+    transform: scale(1.1);
+}
+.team-card:hover .team-tags span {
+    border-color: var(--accent-glow);
+    background: rgba(212, 175, 55, 0.02);
+}
+
+/* Card Design Refinements */
+.project-card {
+    border-radius: 8px !important;
+}
+.project-card:hover {
+    border-color: var(--accent-glow) !important;
+    box-shadow: 0 15px 40px rgba(212, 175, 55, 0.05), inset 0 0 15px rgba(255, 255, 255, 0.01) !important;
+}
+.plan-card {
+    border-radius: 12px !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.plan-card:hover {
+    border-color: var(--accent-glow) !important;
+    box-shadow: 0 15px 40px rgba(212, 175, 55, 0.05), inset 0 0 15px rgba(255, 255, 255, 0.02) !important;
+}
