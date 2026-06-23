@@ -1177,6 +1177,71 @@
         </div>
     </div>
 
+    <!-- Custom Mobile Bottom Navigation Bar -->
+    <div class="mobile-nav-bar">
+        <div class="mobile-nav-indicator"></div>
+        <a href="#now" class="mobile-nav-item active" data-target="now">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span class="mobile-nav-label">Now</span>
+        </a>
+        <a href="#work" class="mobile-nav-item" data-target="work">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+            <span class="mobile-nav-label">Work</span>
+        </a>
+        <a href="#team" class="mobile-nav-item" data-target="team">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span class="mobile-nav-label">Team</span>
+        </a>
+        <a href="#" class="mobile-nav-item" id="mobile-nav-profile" data-target="profile">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span class="mobile-nav-label" id="mobile-nav-profile-label">Sign In</span>
+        </a>
+        <a href="#" class="mobile-nav-item" id="mobile-nav-toggle-more" data-target="more">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+            <span class="mobile-nav-label">More</span>
+        </a>
+    </div>
+
+    <!-- Custom Mobile Navigation Drawer Overlay (Slides up from the bottom) -->
+    <div class="mobile-drawer-overlay" id="mobile-drawer-overlay"></div>
+    <div class="mobile-drawer" id="mobile-drawer">
+        <div class="mobile-drawer-handle"></div>
+        <div class="mobile-drawer-header">
+            <span class="mobile-drawer-title">Navigation</span>
+            <button class="mobile-drawer-close" id="mobile-drawer-close" aria-label="Close menu">&times;</button>
+        </div>
+        <ul class="mobile-drawer-links">
+            <li style="--stagger-index: 1;"><a href="#now" class="drawer-link"><span class="drawer-num">01</span> Now</a></li>
+            <li style="--stagger-index: 2;"><a href="#work" class="drawer-link"><span class="drawer-num">02</span> Work</a></li>
+            <li style="--stagger-index: 3;"><a href="#plans" class="drawer-link"><span class="drawer-num">03</span> Plans</a></li>
+            <li style="--stagger-index: 4;"><a href="#team" class="drawer-link"><span class="drawer-num">04</span> Team</a></li>
+            <li style="--stagger-index: 5;"><a href="#experience" class="drawer-link"><span class="drawer-num">05</span> Experience</a></li>
+            <li style="--stagger-index: 6;"><a href="#contact" class="drawer-link"><span class="drawer-num">06</span> Contact</a></li>
+            <li style="--stagger-index: 7;"><a href="policies.html" class="drawer-link"><span class="drawer-num">07</span> Policies</a></li>
+            <li style="--stagger-index: 8;"><a href="#" id="mobile-drawer-apply-btn" class="drawer-link"><span class="drawer-num">08</span> Careers</a></li>
+            <li style="--stagger-index: 9;"><a href="#" id="mobile-drawer-auth-btn" class="drawer-link"><span class="drawer-num">09</span> Sign In</a></li>
+            <li style="--stagger-index: 10;"><a href="worker.html" class="drawer-link"><span class="drawer-num">10</span> Worker Portal</a></li>
+        </ul>
+    </div>
+
     <!-- PayPal SDK Integration -->
     <script src="https://www.paypal.com/sdk/js?client-id=AY38sUqC76BfIr3gCWeu31ghxLky61yRDaTlak-uTPX2Uu-XlfSK3r96hnYEuOL7tBroVS7Kd7v5hzi7&currency=USD"></script>
     <script type="module" src="script.js"></script>

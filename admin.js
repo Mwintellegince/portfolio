@@ -292,15 +292,54 @@ document.addEventListener('DOMContentLoaded', () => {
         announcements: '/ Announcements'
     };
 
+    window.switchAdminPage = function(target) {
+        navItems.forEach(b => b.classList.remove('active'));
+        const desktopBtn = document.querySelector(`.nav-item[data-page="${target}"]`);
+        if (desktopBtn) desktopBtn.classList.add('active');
+
+        pages.forEach(p => p.classList.remove('active'));
+        const targetPage = document.getElementById(`page-${target}`);
+        if (targetPage) targetPage.classList.add('active');
+
+        if (topbarName) topbarName.textContent = pageNames[target] || `/${target}`;
+
+        // Sync mobile bottom nav items
+        const bottomItems = document.querySelectorAll('#admin-mobile-nav-bar .mobile-nav-item[data-admin-page]');
+        bottomItems.forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-admin-page') === target) {
+                item.classList.add('active');
+            }
+        });
+
+        // Sync drawer items
+        const drawerLinks = document.querySelectorAll('#admin-mobile-drawer .drawer-link[data-admin-page]');
+        drawerLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('data-admin-page') === target) {
+                link.classList.add('active');
+            }
+        });
+
+        // Adjust 'More' state
+        const drawerPageTargets = ['history', 'receipts', 'announcements'];
+        const moreBtn = document.getElementById('admin-mobile-toggle-more');
+        if (drawerPageTargets.includes(target)) {
+            if (moreBtn) moreBtn.classList.add('active');
+        } else {
+            if (moreBtn) moreBtn.classList.remove('active');
+        }
+
+        // Reposition indicator
+        if (typeof updateAdminMobileIndicator === 'function') {
+            setTimeout(updateAdminMobileIndicator, 50);
+        }
+    };
+
     navItems.forEach(btn => {
         btn.addEventListener('click', () => {
-            navItems.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
             const target = btn.dataset.page;
-            pages.forEach(p => p.classList.remove('active'));
-            const page = document.getElementById(`page-${target}`);
-            if (page) { page.classList.add('active'); }
-            if (topbarName) topbarName.textContent = pageNames[target] || '';
+            window.switchAdminPage(target);
         });
     });
 
@@ -1395,6 +1434,97 @@ document.addEventListener('DOMContentLoaded', () => {
                         linkUrlEl.disabled = false;
                         linkUrlEl.style.opacity = '1';
                     }
+                }
+            });
+        }
+    }
+
+    /* ==========================================================================
+       CUSTOM MOBILE BOTTOM NAVIGATION & DRAWER FOR ADMIN
+       ========================================================================== */
+    const adminMobileNavBar = document.getElementById('admin-mobile-nav-bar');
+    const adminMobileIndicator = document.getElementById('admin-mobile-nav-indicator');
+    const adminMobileNavItems = document.querySelectorAll('#admin-mobile-nav-bar .mobile-nav-item');
+    const adminMobileDrawer = document.getElementById('admin-mobile-drawer');
+    const adminMobileDrawerOverlay = document.getElementById('admin-mobile-drawer-overlay');
+    const adminMobileDrawerClose = document.getElementById('admin-mobile-drawer-close');
+    const adminMobileDrawerLogout = document.getElementById('admin-mobile-drawer-logout-btn');
+
+    if (adminMobileNavBar) {
+        // Position indicator initially and on resize
+        setTimeout(updateAdminMobileIndicator, 200);
+        window.addEventListener('resize', updateAdminMobileIndicator);
+
+        // Expose indicator function globally in admin.js scope
+        window.updateAdminMobileIndicator = updateAdminMobileIndicator;
+
+        function updateAdminMobileIndicator() {
+            if (!adminMobileNavBar || !adminMobileIndicator) return;
+            const activeItem = adminMobileNavBar.querySelector('.mobile-nav-item.active');
+            if (activeItem) {
+                const rect = activeItem.getBoundingClientRect();
+                const parentRect = adminMobileNavBar.getBoundingClientRect();
+                const left = rect.left - parentRect.left + (rect.width - adminMobileIndicator.offsetWidth) / 2;
+                adminMobileIndicator.style.transform = `translateX(${left}px)`;
+            }
+        }
+
+        // Click handlers for bottom nav items
+        adminMobileNavItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                const pageTarget = item.getAttribute('data-admin-page');
+                if (pageTarget) {
+                    window.switchAdminPage(pageTarget);
+                } else if (item.id === 'admin-mobile-toggle-more') {
+                    e.preventDefault();
+                    openMobileDrawer();
+                }
+            });
+        });
+
+        // Drawer open/close functions
+        function openMobileDrawer() {
+            if (adminMobileDrawer && adminMobileDrawerOverlay) {
+                adminMobileDrawerOverlay.classList.add('active');
+                adminMobileDrawer.classList.add('drawer-open');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeMobileDrawer() {
+            if (adminMobileDrawer && adminMobileDrawerOverlay) {
+                adminMobileDrawerOverlay.classList.remove('active');
+                adminMobileDrawer.classList.remove('drawer-open');
+                document.body.style.overflow = '';
+            }
+        }
+
+        if (adminMobileDrawerClose) adminMobileDrawerClose.addEventListener('click', closeMobileDrawer);
+        if (adminMobileDrawerOverlay) adminMobileDrawerOverlay.addEventListener('click', closeMobileDrawer);
+
+        // Click handlers inside drawer
+        const drawerLinks = document.querySelectorAll('#admin-mobile-drawer .drawer-link[data-admin-page]');
+        drawerLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                const pageTarget = link.getAttribute('data-admin-page');
+                if (pageTarget) {
+                    closeMobileDrawer();
+                    window.switchAdminPage(pageTarget);
+                }
+            });
+        });
+
+        // Logout hook
+        if (adminMobileDrawerLogout) {
+            adminMobileDrawerLogout.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeMobileDrawer();
+                const desktopLogoutBtn = document.getElementById('sidebar-logout-btn');
+                if (desktopLogoutBtn) {
+                    desktopLogoutBtn.click();
+                } else {
+                    sessionStorage.removeItem('ownerOk');
+                    window.location.reload();
                 }
             });
         }

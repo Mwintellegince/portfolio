@@ -282,5 +282,143 @@
             </section>
         </main>
     </div>
+
+    <!-- Custom Mobile Bottom Navigation Bar -->
+    <div class="mobile-nav-bar">
+        <div class="mobile-nav-indicator"></div>
+        <a href="index.html#now" class="mobile-nav-item" data-target="now">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span class="mobile-nav-label">Now</span>
+        </a>
+        <a href="index.html#work" class="mobile-nav-item" data-target="work">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+            <span class="mobile-nav-label">Work</span>
+        </a>
+        <a href="index.html#team" class="mobile-nav-item" data-target="team">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span class="mobile-nav-label">Team</span>
+        </a>
+        <a href="index.html?open=auth" class="mobile-nav-item" id="mobile-nav-profile" data-target="profile">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span class="mobile-nav-label" id="mobile-nav-profile-label">Sign In</span>
+        </a>
+        <a href="#" class="mobile-nav-item" id="mobile-nav-toggle-more" data-target="more">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+            <span class="mobile-nav-label">More</span>
+        </a>
+    </div>
+
+    <!-- Custom Mobile Navigation Drawer Overlay (Slides up from the bottom) -->
+    <div class="mobile-drawer-overlay" id="mobile-drawer-overlay"></div>
+    <div class="mobile-drawer" id="mobile-drawer">
+        <div class="mobile-drawer-handle"></div>
+        <div class="mobile-drawer-header">
+            <span class="mobile-drawer-title">Navigation</span>
+            <button class="mobile-drawer-close" id="mobile-drawer-close" aria-label="Close menu">&times;</button>
+        </div>
+        <ul class="mobile-drawer-links">
+            <li style="--stagger-index: 1;"><a href="index.html#now" class="drawer-link"><span class="drawer-num">01</span> Now</a></li>
+            <li style="--stagger-index: 2;"><a href="index.html#work" class="drawer-link"><span class="drawer-num">02</span> Work</a></li>
+            <li style="--stagger-index: 3;"><a href="index.html#plans" class="drawer-link"><span class="drawer-num">03</span> Plans</a></li>
+            <li style="--stagger-index: 4;"><a href="index.html#team" class="drawer-link"><span class="drawer-num">04</span> Team</a></li>
+            <li style="--stagger-index: 5;"><a href="index.html#experience" class="drawer-link"><span class="drawer-num">05</span> Experience</a></li>
+            <li style="--stagger-index: 6;"><a href="index.html#contact" class="drawer-link"><span class="drawer-num">06</span> Contact</a></li>
+            <li style="--stagger-index: 7;"><a href="#" class="drawer-link active"><span class="drawer-num">07</span> Policies</a></li>
+            <li style="--stagger-index: 8;"><a href="index.html?open=careers" class="drawer-link"><span class="drawer-num">08</span> Careers</a></li>
+            <li style="--stagger-index: 9;"><a href="index.html?open=auth" class="drawer-link" id="mobile-drawer-auth-btn"><span class="drawer-num">09</span> Sign In</a></li>
+            <li style="--stagger-index: 10;"><a href="worker.html" class="drawer-link"><span class="drawer-num">10</span> Worker Portal</a></li>
+        </ul>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileNavBar = document.querySelector('.mobile-nav-bar');
+            const mobileIndicator = document.querySelector('.mobile-nav-indicator');
+            const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+            const mobileDrawer = document.getElementById('mobile-drawer');
+            const mobileDrawerOverlay = document.getElementById('mobile-drawer-overlay');
+            const mobileDrawerClose = document.getElementById('mobile-drawer-close');
+
+            if (!mobileNavBar) return;
+
+            // Highlight 'More' item since Policies is inside it
+            const moreItem = document.getElementById('mobile-nav-toggle-more');
+            if (moreItem) {
+                moreItem.classList.add('active');
+                setTimeout(updateMobileIndicator, 200);
+            }
+
+            window.addEventListener('resize', updateMobileIndicator);
+
+            function updateMobileIndicator() {
+                if (!mobileNavBar || !mobileIndicator) return;
+                const activeItem = mobileNavBar.querySelector('.mobile-nav-item.active');
+                if (activeItem) {
+                    const rect = activeItem.getBoundingClientRect();
+                    const parentRect = mobileNavBar.getBoundingClientRect();
+                    const left = rect.left - parentRect.left + (rect.width - mobileIndicator.offsetWidth) / 2;
+                    mobileIndicator.style.transform = `translateX(${left}px)`;
+                }
+            }
+
+            // Click handlers
+            mobileNavItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const targetType = item.getAttribute('data-target');
+                    if (targetType === 'more') {
+                        e.preventDefault();
+                        openMobileDrawer();
+                    }
+                });
+            });
+
+            function openMobileDrawer() {
+                if (mobileDrawer && mobileDrawerOverlay) {
+                    mobileDrawerOverlay.classList.add('active');
+                    mobileDrawer.classList.add('drawer-open');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+
+            function closeMobileDrawer() {
+                if (mobileDrawer && mobileDrawerOverlay) {
+                    mobileDrawerOverlay.classList.remove('active');
+                    mobileDrawer.classList.remove('drawer-open');
+                    document.body.style.overflow = '';
+                }
+            }
+
+            if (mobileDrawerClose) mobileDrawerClose.addEventListener('click', closeMobileDrawer);
+            if (mobileDrawerOverlay) mobileDrawerOverlay.addEventListener('click', closeMobileDrawer);
+
+            // Dynamically show profile label based on local storage login state
+            const localUser = localStorage.getItem('client_user') || localStorage.getItem('firebase:authUser');
+            const profileLabel = document.getElementById('mobile-nav-profile-label');
+            const drawerAuthBtn = document.getElementById('mobile-drawer-auth-btn');
+
+            if (localUser) {
+                if (profileLabel) profileLabel.textContent = 'Profile';
+                if (drawerAuthBtn) drawerAuthBtn.innerHTML = '<span class="drawer-num">09</span> Profile';
+            }
+        });
+    </script>
 </body>
 </html>

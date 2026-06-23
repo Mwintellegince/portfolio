@@ -289,6 +289,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 </span>
             ` : `<span class="nav-num">09</span> Sign In`;
         }
+        
+        // Update custom mobile bottom nav elements
+        const mobileProfileLabel = document.getElementById('mobile-nav-profile-label');
+        if (mobileProfileLabel) {
+            mobileProfileLabel.textContent = user ? "Profile" : "Sign In";
+        }
+        const mobileDrawerAuthBtn = document.getElementById('mobile-drawer-auth-btn');
+        if (mobileDrawerAuthBtn) {
+            mobileDrawerAuthBtn.innerHTML = user ? `<span class="drawer-num">09</span> Profile` : `<span class="drawer-num">09</span> Sign In`;
+        }
+
         setFormPrefills(user);
         if (!user && profileModal) {
             profileModal.classList.remove('active');
@@ -1005,6 +1016,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isOpen = siteNav.classList.toggle('nav-open');
             navHamburger.classList.toggle('open', isOpen);
             navHamburger.setAttribute('aria-expanded', String(isOpen));
+            document.body.classList.toggle('nav-open-active', isOpen);
             // Prevent body scroll when nav is open
             document.body.style.overflow = isOpen ? 'hidden' : '';
         });
@@ -1015,8 +1027,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 siteNav.classList.remove('nav-open');
                 navHamburger.classList.remove('open');
                 navHamburger.setAttribute('aria-expanded', 'false');
+                document.body.classList.remove('nav-open-active');
                 document.body.style.overflow = '';
             });
+        });
+
+        // Close nav when clicking outside the menu drawer
+        document.addEventListener('click', (e) => {
+            if (document.body.classList.contains('nav-open-active')) {
+                if (!siteNav.contains(e.target) && !navHamburger.contains(e.target)) {
+                    siteNav.classList.remove('nav-open');
+                    navHamburger.classList.remove('open');
+                    navHamburger.setAttribute('aria-expanded', 'false');
+                    document.body.classList.remove('nav-open-active');
+                    document.body.style.overflow = '';
+                }
+            }
         });
     }
 
@@ -1180,6 +1206,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 
+                // Update custom mobile bottom nav active highlights
+                const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+                let hasActiveSection = false;
+                mobileNavItems.forEach(item => {
+                    item.classList.remove('active');
+                    const target = item.getAttribute('href');
+                    if (target === `#${currentSectionId}`) {
+                        item.classList.add('active');
+                        hasActiveSection = true;
+                    }
+                });
+                
+                // Fallback: If section is hero or empty, mark Now active
+                if (!hasActiveSection || currentSectionId === 'hero' || currentSectionId === '') {
+                    const nowItem = document.querySelector('.mobile-nav-item[data-target="now"]');
+                    if (nowItem) {
+                        nowItem.classList.add('active');
+                    }
+                }
+                
+                // Update indicator position
+                if (typeof updateMobileIndicator === 'function') {
+                    updateMobileIndicator();
+                }
+
                 scrollScheduled = false;
             });
         }
@@ -3118,6 +3169,147 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Call banner initializer after initialization
     setTimeout(loadActiveAnnouncement, 500);
+
+    /* ==========================================================================
+       CUSTOM MOBILE BOTTOM NAVIGATION & DRAWER SYSTEM
+       ========================================================================== */
+    function initMobileNav() {
+        const mobileNavBar = document.querySelector('.mobile-nav-bar');
+        const mobileIndicator = document.querySelector('.mobile-nav-indicator');
+        const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+        const mobileDrawer = document.getElementById('mobile-drawer');
+        const mobileDrawerOverlay = document.getElementById('mobile-drawer-overlay');
+        const mobileDrawerClose = document.getElementById('mobile-drawer-close');
+        const mobileDrawerApplyBtn = document.getElementById('mobile-drawer-apply-btn');
+        const mobileDrawerAuthBtn = document.getElementById('mobile-drawer-auth-btn');
+
+        if (!mobileNavBar) return;
+
+        // Position indicator initially and on resize
+        setTimeout(updateMobileIndicator, 200);
+        window.addEventListener('resize', updateMobileIndicator);
+
+        // Expose update function globally inside script scope
+        window.updateMobileIndicator = updateMobileIndicator;
+
+        function updateMobileIndicator() {
+            if (!mobileNavBar || !mobileIndicator) return;
+            const activeItem = mobileNavBar.querySelector('.mobile-nav-item.active');
+            if (activeItem) {
+                const rect = activeItem.getBoundingClientRect();
+                const parentRect = mobileNavBar.getBoundingClientRect();
+                const left = rect.left - parentRect.left + (rect.width - mobileIndicator.offsetWidth) / 2;
+                mobileIndicator.style.transform = `translateX(${left}px)`;
+            }
+        }
+
+        // Click handlers for bottom nav items
+        mobileNavItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                const targetType = item.getAttribute('data-target');
+
+                if (targetType === 'profile') {
+                    e.preventDefault();
+                    if (currentUser) {
+                        if (typeof openProfileModal === 'function') openProfileModal();
+                    } else {
+                        if (typeof openAuthModal === 'function') openAuthModal();
+                    }
+                } else if (targetType === 'more') {
+                    e.preventDefault();
+                    openMobileDrawer();
+                } else {
+                    // Standard navigation (Now, Work, Team)
+                    mobileNavItems.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    updateMobileIndicator();
+                }
+            });
+        });
+
+        // Drawer open/close functions
+        function openMobileDrawer() {
+            if (mobileDrawer && mobileDrawerOverlay) {
+                mobileDrawerOverlay.classList.add('active');
+                mobileDrawer.classList.add('drawer-open');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeMobileDrawer() {
+            if (mobileDrawer && mobileDrawerOverlay) {
+                mobileDrawerOverlay.classList.remove('active');
+                mobileDrawer.classList.remove('drawer-open');
+                document.body.style.overflow = '';
+            }
+        }
+
+        if (mobileDrawerClose) {
+            mobileDrawerClose.addEventListener('click', closeMobileDrawer);
+        }
+        if (mobileDrawerOverlay) {
+            mobileDrawerOverlay.addEventListener('click', closeMobileDrawer);
+        }
+
+        // Close drawer when links are clicked
+        const drawerLinks = document.querySelectorAll('.drawer-link');
+        drawerLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                closeMobileDrawer();
+                
+                // Highlight the corresponding bottom nav item if applicable
+                const href = link.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    const targetName = href.substring(1);
+                    const matchingNavItem = document.querySelector(`.mobile-nav-item[data-target="${targetName}"]`);
+                    if (matchingNavItem) {
+                        mobileNavItems.forEach(i => i.classList.remove('active'));
+                        matchingNavItem.classList.add('active');
+                        updateMobileIndicator();
+                    }
+                }
+            });
+        });
+
+        // Special buttons inside the drawer
+        if (mobileDrawerApplyBtn) {
+            mobileDrawerApplyBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeMobileDrawer();
+                const careersBtn = document.getElementById('menu-apply-btn');
+                if (careersBtn) careersBtn.click();
+            });
+        }
+
+        if (mobileDrawerAuthBtn) {
+            mobileDrawerAuthBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeMobileDrawer();
+                if (currentUser) {
+                    if (typeof openProfileModal === 'function') openProfileModal();
+                } else {
+                    if (typeof openAuthModal === 'function') openAuthModal();
+                }
+            });
+        }
+    }
+
+    // Initialize Mobile Navigation
+    initMobileNav();
+
+    // Handle URL redirects / query params on load
+    const urlParams = new URLSearchParams(window.location.search);
+    const openParam = urlParams.get('open');
+    if (openParam === 'auth') {
+        setTimeout(() => {
+            if (typeof openAuthModal === 'function') openAuthModal();
+        }, 600);
+    } else if (openParam === 'careers') {
+        setTimeout(() => {
+            const careersBtn = document.getElementById('menu-apply-btn');
+            if (careersBtn) careersBtn.click();
+        }, 600);
+    }
 
 });
 

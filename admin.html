@@ -654,6 +654,227 @@
         @media (max-width: 768px) {
             #sidebar { display: none; }
             .stats-row { grid-template-columns: 1fr 1fr; }
+            #main-content {
+                padding-bottom: 100px !important;
+            }
+            .topbar {
+                padding: 12px 16px;
+            }
+            .mobile-nav-bar {
+                display: flex;
+            }
+        }
+
+        /* Custom Mobile Bottom Navigation Pill Dock */
+        .mobile-nav-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 440px;
+            height: 66px;
+            background: rgba(10, 10, 12, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            border-radius: 100px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.02);
+            display: none; /* Hidden on desktop, shown inside max-width media query */
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 12px;
+            z-index: 9999;
+            box-sizing: border-box;
+        }
+
+        /* Floating Slide Active Indicator Bubble */
+        .mobile-nav-indicator {
+            position: absolute;
+            height: 46px;
+            width: 68px;
+            background: rgba(212, 175, 55, 0.08);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 100px;
+            z-index: -1;
+            top: 9px;
+            left: 0;
+            pointer-events: none;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.1);
+        }
+
+        .mobile-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: var(--muted);
+            background: none;
+            border: none;
+            height: 100%;
+            flex: 1;
+            position: relative;
+            transition: color 0.3s ease, transform 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
+        }
+
+        .mobile-nav-item:active {
+            transform: scale(0.92);
+        }
+
+        .mobile-nav-icon {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            transition: stroke 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .mobile-nav-item.active .mobile-nav-icon {
+            transform: translateY(-2px) scale(1.1);
+        }
+
+        .mobile-nav-label {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.65rem;
+            font-weight: 500;
+            margin-top: 4px;
+            opacity: 0.8;
+            letter-spacing: 0.01em;
+            transition: color 0.3s ease;
+        }
+
+        .mobile-nav-item.active {
+            color: var(--gold) !important;
+        }
+
+        /* Mobile Drawer Slide-Up Menu */
+        .mobile-drawer-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 9997;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+            pointer-events: none;
+        }
+
+        .mobile-drawer-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .mobile-drawer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(13, 13, 17, 0.96);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-top: 1px solid rgba(212, 175, 55, 0.15);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            z-index: 9998;
+            transform: translateY(100%);
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 24px 20px 100px; /* Safe padding for bottom dock */
+            box-sizing: border-box;
+        }
+
+        .mobile-drawer.drawer-open {
+            transform: translateY(0);
+        }
+
+        .mobile-drawer-handle {
+            width: 40px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+
+        .mobile-drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .mobile-drawer-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+            color: var(--text);
+        }
+
+        .mobile-drawer-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .mobile-drawer-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .mobile-drawer-links li {
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .mobile-drawer.drawer-open .mobile-drawer-links li {
+            opacity: 1;
+            transform: translateY(0);
+            transition-delay: calc(var(--stagger-index) * 0.03s);
+        }
+
+        .drawer-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 14px 16px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+        }
+
+        .drawer-link:active,
+        .drawer-link.active {
+            color: var(--gold) !important;
+            background: rgba(212, 175, 55, 0.05);
+            border-color: rgba(212, 175, 55, 0.2);
+        }
+
+        .drawer-num {
+            font-family: monospace;
+            font-size: 0.68rem;
+            color: rgba(212, 175, 55, 0.5);
         }
     </style>
 </head>
@@ -1206,6 +1427,68 @@
             <button class="modal-btn ghost" id="invite-close-btn" style="cursor: none;">Done</button>
         </div>
     </div>
+</div>
+
+<!-- Custom Mobile Bottom Navigation Bar (Admin Panel) -->
+<div class="mobile-nav-bar" id="admin-mobile-nav-bar">
+    <div class="mobile-nav-indicator" id="admin-mobile-nav-indicator"></div>
+    <button class="mobile-nav-item active" data-admin-page="overview">
+        <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+        <span class="mobile-nav-label">Overview</span>
+    </button>
+    <button class="mobile-nav-item" data-admin-page="users">
+        <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+        </svg>
+        <span class="mobile-nav-label">Users</span>
+    </button>
+    <button class="mobile-nav-item" data-admin-page="pending">
+        <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span class="mobile-nav-label">Pending</span>
+    </button>
+    <button class="mobile-nav-item" data-admin-page="applications">
+        <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <span class="mobile-nav-label">Recruits</span>
+    </button>
+    <button class="mobile-nav-item" id="admin-mobile-toggle-more" data-target="more">
+        <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+        <span class="mobile-nav-label">More</span>
+    </button>
+</div>
+
+<!-- Custom Mobile Navigation Drawer Overlay (Slides up from the bottom) -->
+<div class="mobile-drawer-overlay" id="admin-mobile-drawer-overlay"></div>
+<div class="mobile-drawer" id="admin-mobile-drawer">
+    <div class="mobile-drawer-handle"></div>
+    <div class="mobile-drawer-header">
+        <span class="mobile-drawer-title">Admin Navigation</span>
+        <button class="mobile-drawer-close" id="admin-mobile-drawer-close" aria-label="Close menu">&times;</button>
+    </div>
+    <ul class="mobile-drawer-links">
+        <li style="--stagger-index: 1;"><button class="drawer-link" data-admin-page="history"><span class="drawer-num">01</span> History</button></li>
+        <li style="--stagger-index: 2;"><button class="drawer-link" data-admin-page="receipts"><span class="drawer-num">02</span> Receipts</button></li>
+        <li style="--stagger-index: 3;"><button class="drawer-link" data-admin-page="announcements"><span class="drawer-num">03</span> Announcements</button></li>
+        <li style="--stagger-index: 4;"><a href="index.html" class="drawer-link" style="color:var(--gold); border-color:rgba(212,175,55,.1);"><span class="drawer-num">04</span> Exit to Site</a></li>
+        <li style="--stagger-index: 5;"><button class="drawer-link" id="admin-mobile-drawer-logout-btn" style="color:var(--red); border-color:rgba(231,76,60,.1);"><span class="drawer-num">05</span> Lock Panel</button></li>
+    </ul>
 </div>
 
 <script src="admin.js"></script>
