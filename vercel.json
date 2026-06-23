@@ -1,4 +1,9 @@
 {
   "version": 2,
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/policies", "destination": "/policies.html" },
+    { "source": "/worker", "destination": "/worker.html" }
+  ]
 }
