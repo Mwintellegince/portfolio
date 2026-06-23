@@ -57,70 +57,28 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupFirebaseListeners() {
         if (!db) return;
 
-        // Sync orders
-        db.collection('orders').onSnapshot(snapshot => {
-            let orders = [];
-            snapshot.forEach(doc => {
-                orders.push({ id: doc.id, ...doc.data() });
+        function syncCollection(collectionName, localStorageKey, onUpdate) {
+            db.collection(collectionName).onSnapshot(snapshot => {
+                const docs = [];
+                snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
+                // Only overwrite localStorage if snapshot has data or localStorage is empty
+                const existing = localStorage.getItem(localStorageKey);
+                if (docs.length || !existing || JSON.parse(existing).length === 0) {
+                    localStorage.setItem(localStorageKey, JSON.stringify(docs));
+                }
+                loadAllData();
+                if (onUpdate) onUpdate(docs);
+            }, err => {
+                console.error(`Firebase ${collectionName} Sync Error:`, err);
+                loadAllData();
             });
-            localStorage.setItem('client_orders', JSON.stringify(orders));
-            loadAllData();
-        }, err => {
-            console.error("Firebase Orders Sync Error:", err);
-            loadAllData();
-        });
+        }
 
-        // Sync applications
-        db.collection('applications').onSnapshot(snapshot => {
-            let apps = [];
-            snapshot.forEach(doc => {
-                apps.push({ id: doc.id, ...doc.data() });
-            });
-            localStorage.setItem('client_applications', JSON.stringify(apps));
-            loadAllData();
-        }, err => {
-            console.error("Firebase Applications Sync Error:", err);
-            loadAllData();
-        });
-
-        // Sync announcements
-        db.collection('announcements').onSnapshot(snapshot => {
-            let anns = [];
-            snapshot.forEach(doc => {
-                anns.push({ id: doc.id, ...doc.data() });
-            });
-            localStorage.setItem('client_announcements', JSON.stringify(anns));
-            loadAllData();
-        }, err => {
-            console.error("Firebase Announcements Sync Error:", err);
-            loadAllData();
-        });
-
-        // Sync workers
-        db.collection('workers').onSnapshot(snapshot => {
-            let workers = [];
-            snapshot.forEach(doc => {
-                workers.push({ id: doc.id, ...doc.data() });
-            });
-            localStorage.setItem('client_workers', JSON.stringify(workers));
-            loadAllData();
-        }, err => {
-            console.error("Firebase Workers Sync Error:", err);
-            loadAllData();
-        });
-
-        // Sync users
-        db.collection('users').onSnapshot(snapshot => {
-            let users = [];
-            snapshot.forEach(doc => {
-                users.push({ id: doc.id, ...doc.data() });
-            });
-            localStorage.setItem('client_users', JSON.stringify(users));
-            loadAllData();
-        }, err => {
-            console.error("Firebase Users Sync Error:", err);
-            loadAllData();
-        });
+        syncCollection('orders',        'client_orders');
+        syncCollection('applications',  'client_applications');
+        syncCollection('announcements', 'client_announcements');
+        syncCollection('workers',       'client_workers');
+        syncCollection('users',         'client_users');
     }
 
 
@@ -367,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadAllData() {
-        // Eagerly fetch from Firestore if available — ensures live data on every load
+        // Only fetch from Firestore if localStorage is empty — preserves previously stored data
         if (isFirebaseActive && db) {
             const collections = [
                 { name: 'orders',      key: 'client_orders' },
@@ -377,13 +335,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 { name: 'workers',     key: 'client_workers' },
             ];
             for (const c of collections) {
-                try {
-                    const snap = await db.collection(c.name).get();
-                    const docs = [];
-                    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
-                    localStorage.setItem(c.key, JSON.stringify(docs));
-                } catch (e) {
-                    // collection may not exist yet — use localStorage fallback
+                const existing = localStorage.getItem(c.key);
+                if (!existing || JSON.parse(existing).length === 0) {
+                    try {
+                        const snap = await db.collection(c.name).get();
+                        const docs = [];
+                        snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+                        if (docs.length) localStorage.setItem(c.key, JSON.stringify(docs));
+                    } catch (e) {
+                        // collection may not exist yet
+                    }
                 }
             }
         }
