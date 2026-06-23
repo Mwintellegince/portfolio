@@ -578,13 +578,30 @@
                 renderWorkerData();
             });
 
-            // Listen to workers
-            db.collection('workers').doc('work_' + email.replace(/\./g, '_')).onSnapshot(doc => {
-                if (doc.exists) {
-                    localStorage.setItem('active_worker_profile', JSON.stringify({ id: doc.id, ...doc.data() }));
-                    renderWorkerData();
+            // Listen to workers (robust casing check)
+            (async () => {
+                let docId = 'work_' + email.replace(/\./g, '_');
+                try {
+                    const doc = await db.collection('workers').doc(docId).get();
+                    if (!doc.exists) {
+                        const snapshot = await db.collection('workers').get();
+                        snapshot.forEach(d => {
+                            const data = d.data();
+                            if (data.email && data.email.toLowerCase() === email) {
+                                docId = d.id;
+                            }
+                        });
+                    }
+                } catch (err) {
+                    console.error("Error identifying worker document casing:", err);
                 }
-            });
+                db.collection('workers').doc(docId).onSnapshot(doc => {
+                    if (doc.exists) {
+                        localStorage.setItem('active_worker_profile', JSON.stringify({ id: doc.id, ...doc.data() }));
+                        renderWorkerData();
+                    }
+                });
+            })();
         }
 
         /* =====================================================================
@@ -718,9 +735,20 @@
                 } else if (isFirebaseActive || FIREBASE_CONFIG.apiKey) {
                     try {
                         await initFirebase();
-                        const doc = await db.collection('workers').doc('work_' + email.replace(/\./g, '_')).get();
-                        if (doc.exists) {
-                            worker = { id: doc.id, ...doc.data() };
+                        let docId = 'work_' + email.replace(/\./g, '_');
+                        let doc = await db.collection('workers').doc(docId).get();
+                        if (!doc.exists) {
+                            const snapshot = await db.collection('workers').get();
+                            snapshot.forEach(d => {
+                                const data = d.data();
+                                if (data.email && data.email.toLowerCase() === email) {
+                                    doc = d;
+                                    docId = d.id;
+                                }
+                            });
+                        }
+                        if (doc && doc.exists) {
+                            worker = { id: docId, ...doc.data() };
                             worker.passwordHash = newPassHash;
                             worker.twoFactorSetup = true;
                             worker.twoFactorPINHash = pinHash;
@@ -776,9 +804,20 @@
                 if (!worker && (isFirebaseActive || FIREBASE_CONFIG.apiKey)) {
                     try {
                         await initFirebase();
-                        const doc = await db.collection('workers').doc('work_' + email.replace(/\./g, '_')).get();
-                        if (doc.exists) {
-                            worker = { id: doc.id, ...doc.data() };
+                        let docId = 'work_' + email.replace(/\./g, '_');
+                        let doc = await db.collection('workers').doc(docId).get();
+                        if (!doc.exists) {
+                            const snapshot = await db.collection('workers').get();
+                            snapshot.forEach(d => {
+                                const data = d.data();
+                                if (data.email && data.email.toLowerCase() === email) {
+                                    doc = d;
+                                    docId = d.id;
+                                }
+                            });
+                        }
+                        if (doc && doc.exists) {
+                            worker = { id: docId, ...doc.data() };
                         }
                     } catch (err) {
                         console.error("2FA Firestore fetch error:", err);
@@ -832,9 +871,20 @@
                     // Fetch worker from Firestore
                     try {
                         await initFirebase();
-                        const doc = await db.collection('workers').doc('work_' + email.replace(/\./g, '_')).get();
-                        if (doc.exists) {
-                            worker = { id: doc.id, ...doc.data() };
+                        let docId = 'work_' + email.replace(/\./g, '_');
+                        let doc = await db.collection('workers').doc(docId).get();
+                        if (!doc.exists) {
+                            const snapshot = await db.collection('workers').get();
+                            snapshot.forEach(d => {
+                                const data = d.data();
+                                if (data.email && data.email.toLowerCase() === email) {
+                                    doc = d;
+                                    docId = d.id;
+                                }
+                            });
+                        }
+                        if (doc && doc.exists) {
+                            worker = { id: docId, ...doc.data() };
                         }
                     } catch (err) {
                         console.error("Firestore worker fetch error:", err);

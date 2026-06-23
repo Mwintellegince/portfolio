@@ -654,10 +654,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (isFirebaseActive && db) {
                 try {
-                    const doc = await db.collection('workers').doc('work_' + email.replace(/\./g, '_')).get();
+                    const docId = 'work_' + email.replace(/\./g, '_');
+                    const doc = await db.collection('workers').doc(docId).get();
                     if (doc.exists) {
                         isWorker = true;
                         workerObj = { id: doc.id, ...doc.data() };
+                    } else {
+                        // Fallback: Scan workers collection case-insensitively in case it was created with mixed casing
+                        const snapshot = await db.collection('workers').get();
+                        snapshot.forEach(d => {
+                            const data = d.data();
+                            if (data.email && data.email.toLowerCase() === email) {
+                                isWorker = true;
+                                workerObj = { id: d.id, ...data };
+                            }
+                        });
                     }
                 } catch (err) {
                     console.error("Firestore worker search error:", err);
