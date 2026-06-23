@@ -884,7 +884,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Client Cancel Order Action
     window._clientCancelOrder = async function(orderId) {
-        if (!confirm("Are you sure you want to cancel this order request?")) return;
+        const ok = await customConfirm("Cancel this order request?");
+        if (!ok) return;
 
         if (isFirebaseActive && db) {
             try {
@@ -979,7 +980,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * type: 'error' | 'success' | 'warn'  (defaults to 'error')
      */
     function showNotification(message, type = 'error') {
-        if (!notifOverlay) { alert(message); return; }
+        if (!notifOverlay) { console.warn('Notification:', message); return; }
 
         // Reset
         notifIconWrap.className = 'notif-icon-wrap';
@@ -1004,6 +1005,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // Re-trigger icon animation by removing/re-adding the class
         void notifIconWrap.offsetWidth;
         notifOkBtn.focus();
+    }
+
+    // Custom Confirm (replaces browser confirm())
+    function customConfirm(msg) {
+        return new Promise((resolve) => {
+            const overlay = document.getElementById('confirm-overlay');
+            const msgEl = document.getElementById('confirm-msg');
+            const yesBtn = document.getElementById('confirm-yes-btn');
+            const noBtn = document.getElementById('confirm-no-btn');
+            if (!overlay || !yesBtn || !noBtn) { resolve(false); return; }
+            if (msgEl) msgEl.textContent = msg;
+            overlay.classList.add('active');
+            const cleanup = () => {
+                overlay.classList.remove('active');
+                yesBtn.removeEventListener('click', onYes);
+                noBtn.removeEventListener('click', onNo);
+            };
+            const onYes = () => { cleanup(); resolve(true); };
+            const onNo = () => { cleanup(); resolve(false); };
+            yesBtn.addEventListener('click', onYes);
+            noBtn.addEventListener('click', onNo);
+        });
     }
 
     // Close on OK button
@@ -3000,84 +3023,94 @@ document.addEventListener('DOMContentLoaded', () => {
         applyForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            if (!currentUser) {
-                showNotification('Please sign in to submit an application.', 'warn');
-                return;
-            }
-
-            const name = document.getElementById('apply-name').value.trim();
-            const email = document.getElementById('apply-email').value.trim();
-            const major = applyMajorSelect.value;
-            const website = document.getElementById('apply-website').value.trim();
-            const github = document.getElementById('apply-github').value.trim();
-            const contribution = document.getElementById('apply-contribution').value.trim();
-
-            if (!uploadedCvBase64) {
-                showNotification('Please upload your CV (PDF or Image, max 800KB).', 'warn');
-                return;
-            }
-
-            // Gather selected skills
-            const selectedSkills = [];
-            applyForm.querySelectorAll('input[name="skills"]:checked').forEach(cb => {
-                selectedSkills.push(cb.value);
-            });
-
-            // Gather question responses
-            const responses = [];
-            const questions = MAJOR_QUESTIONS[major] || [];
-            questions.forEach((q, idx) => {
-                const answerVal = document.getElementById(`apply-q-${idx}`).value.trim();
-                responses.push({
-                    questionId: q.id,
-                    questionText: q.question,
-                    answerText: answerVal
-                });
-            });
-
-            const application = {
-                id: 'app_' + Date.now(),
-                name,
-                email,
-                userId: currentUser.uid, // Link to applicant user UID
-                major,
-                website,
-                github,
-                skills: selectedSkills,
-                answers: responses,
-                cv: uploadedCvBase64,
-                contribution,
-                status: 'pending',
-                submittedAt: new Date().toISOString()
-            };
-
-            // Save Application
-            let localApps = [];
-            try { localApps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
-            localApps.push(application);
-            localStorage.setItem('client_applications', JSON.stringify(localApps));
-
-            // Firestore sync
-            if (typeof isFirebaseActive !== 'undefined' && isFirebaseActive && typeof db !== 'undefined' && db) {
-                try {
-                    const { id, ...appData } = application;
-                    await db.collection('applications').doc(id).set(appData);
-                } catch (err) {
-                    console.error('Firestore application sync error:', err);
+            try {
+                if (!currentUser) {
+                    showNotification('Please sign in to submit an application.', 'warn');
+                    return;
                 }
+
+                const name = document.getElementById('apply-name').value.trim();
+                const email = document.getElementById('apply-email').value.trim();
+                const major = applyMajorSelect.value;
+                const website = document.getElementById('apply-website').value.trim();
+                const github = document.getElementById('apply-github').value.trim();
+                const contribution = document.getElementById('apply-contribution').value.trim();
+
+                if (!name || !email || !major || !contribution) {
+                    showNotification('Please fill in all required fields.', 'warn');
+                    return;
+                }
+
+                if (!uploadedCvBase64) {
+                    showNotification('Please upload your CV (PDF or Image, max 800KB).', 'warn');
+                    return;
+                }
+
+                // Gather selected skills
+                const selectedSkills = [];
+                applyForm.querySelectorAll('input[name="skills"]:checked').forEach(cb => {
+                    selectedSkills.push(cb.value);
+                });
+
+                // Gather question responses
+                const responses = [];
+                const questions = MAJOR_QUESTIONS[major] || [];
+                for (let idx = 0; idx < questions.length; idx++) {
+                    const q = questions[idx];
+                    const el = document.getElementById(`apply-q-${idx}`);
+                    const answerVal = el ? el.value.trim() : '';
+                    responses.push({
+                        questionId: q.id,
+                        questionText: q.question,
+                        answerText: answerVal
+                    });
+                }
+
+                const application = {
+                    id: 'app_' + Date.now(),
+                    name,
+                    email,
+                    userId: currentUser.uid,
+                    major,
+                    website,
+                    github,
+                    skills: selectedSkills,
+                    answers: responses,
+                    cv: uploadedCvBase64,
+                    contribution,
+                    status: 'pending',
+                    submittedAt: new Date().toISOString()
+                };
+
+                let localApps = [];
+                try { localApps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
+                localApps.push(application);
+                localStorage.setItem('client_applications', JSON.stringify(localApps));
+
+                if (typeof isFirebaseActive !== 'undefined' && isFirebaseActive && typeof db !== 'undefined' && db) {
+                    try {
+                        const { id, ...appData } = application;
+                        await db.collection('applications').doc(id).set(appData);
+                    } catch (err) {
+                        console.error('Firestore application sync error:', err);
+                    }
+                }
+
+                playTone(523.25, 'sine', 0.15, 0.1);
+                setTimeout(() => playTone(659.25, 'sine', 0.15, 0.1), 100);
+                setTimeout(() => playTone(783.99, 'sine', 0.3,  0.1), 200);
+
+                showNotification('Application submitted successfully! I will review your submission soon.', 'success');
+
+                closeApplyModal();
+                applyForm.reset();
+                uploadedCvBase64 = null;
+                if (applySkillsSection) applySkillsSection.classList.add('hidden');
+                if (applyQuestionsSection) applyQuestionsSection.classList.add('hidden');
+            } catch (err) {
+                console.error('Application submit error:', err);
+                showNotification('Something went wrong while submitting. Please try again.', 'error');
             }
-
-            playTone(523.25, 'sine', 0.15, 0.1);
-            setTimeout(() => playTone(659.25, 'sine', 0.15, 0.1), 100);
-            setTimeout(() => playTone(783.99, 'sine', 0.3,  0.1), 200);
-
-            showNotification('Application submitted successfully! I will review your submission soon.', 'success');
-            
-            closeApplyModal();
-            applyForm.reset();
-            uploadedCvBase64 = null;
-            if (applySkillsSection) applySkillsSection.classList.add('hidden');
-            if (applyQuestionsSection) applyQuestionsSection.classList.add('hidden');
         });
     }
 

@@ -1112,15 +1112,15 @@
             <h2 class="checkout-title" style="margin-bottom: 5px;">Work With Me</h2>
             <p class="checkout-sub" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 25px;">Submit your details, select your major, and answer our technical challenges to apply. <strong style="color:var(--accent);">Accepted team members earn 15% commission on each completed project assigned to them.</strong></p>
             
-            <form id="apply-form" class="checkout-form">
+            <form id="apply-form" class="checkout-form" novalidate>
                 <div class="form-group">
                     <label for="apply-name">Your Full Name</label>
-                    <input type="text" id="apply-name" required placeholder="e.g. Jane Doe">
+                    <input type="text" id="apply-name" required placeholder="Your full name">
                 </div>
                 
                 <div class="form-group">
                     <label for="apply-email">Email Address</label>
-                    <input type="email" id="apply-email" required placeholder="e.g. jane@example.com">
+                    <input type="email" id="apply-email" required placeholder="Your email address">
                 </div>
 
                 <div class="form-group">
@@ -1151,12 +1151,12 @@
 
                 <div class="form-group">
                     <label for="apply-website">Personal Website / Portfolio (Optional)</label>
-                    <input type="url" id="apply-website" placeholder="e.g. https://myportfolio.com">
+                    <input type="url" id="apply-website" placeholder="https://myportfolio.com">
                 </div>
 
                 <div class="form-group">
                     <label for="apply-github">GitHub / Behance / Social Profile (Optional)</label>
-                    <input type="url" id="apply-github" placeholder="e.g. https://github.com/myusername">
+                    <input type="url" id="apply-github" placeholder="https://github.com/yourhandle">
                 </div>
 
                 <div class="form-group">
@@ -1167,7 +1167,7 @@
 
                 <div class="form-group">
                     <label for="apply-contribution">How do you plan to contribute / collaborate?</label>
-                    <textarea id="apply-contribution" rows="3" required placeholder="Describe what projects you want to work on and how we can collaborate..."></textarea>
+                    <textarea id="apply-contribution" rows="3" required placeholder="What projects interest you and how would you like to collaborate?"></textarea>
                 </div>
 
                 <button type="submit" class="btn-primary checkout-submit-btn" id="apply-submit-btn" style="margin-top: 15px; width: 100%; justify-content: center;">
@@ -1240,6 +1240,20 @@
             <li style="--stagger-index: 9;"><a href="#" id="mobile-drawer-auth-btn" class="drawer-link"><span class="drawer-num">09</span> Sign In</a></li>
             <li style="--stagger-index: 10;"><a href="worker.html" class="drawer-link"><span class="drawer-num">10</span> Worker Portal</a></li>
         </ul>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div class="notif-overlay" id="confirm-overlay">
+        <div class="notif-card" style="max-width: 380px;">
+            <div class="notif-icon-wrap" style="border-color: #e74c3c;">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <p class="notif-msg" id="confirm-msg" style="font-size:0.85rem;">Are you sure?</p>
+            <div style="display:flex;gap:10px;margin-top:16px;">
+                <button class="notif-ok-btn" id="confirm-yes-btn" style="background:#e74c3c;flex:1;">Yes</button>
+                <button class="notif-ok-btn" id="confirm-no-btn" style="background:rgba(255,255,255,.06);flex:1;">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <!-- PayPal SDK Integration -->
