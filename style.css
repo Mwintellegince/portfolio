@@ -4398,3 +4398,20 @@ body.has-error-notif #custom-cursor,
 body.has-error-notif #custom-cursor-ring {
     display: none !important;
 }
+
+/* Career/Worker Application Dashboard Badges */
+.badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: .65rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+.badge.pending  { background: rgba(212,175,55,.1); color: var(--accent);  border: 1px solid rgba(212,175,55,.2); }
+.badge.approved { background: rgba(46,204,113,.1); color: var(--green); border: 1px solid rgba(46,204,113,.2); }
+.badge.success  { background: rgba(46,204,113,.1); color: var(--green); border: 1px solid rgba(46,204,113,.2); }
+.badge.rejected { background: rgba(231,76,60,.1);  color: var(--red);   border: 1px solid rgba(231,76,60,.2); }

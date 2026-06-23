@@ -65,6 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
             isFirebaseActive = true;
             console.log("Firebase Firestore and Auth initialized on client side.");
             
+            db.enablePersistence().catch((err) => {
+                console.warn("Firestore persistence failed:", err.code);
+            });
+            
             setupClientAuthObserver();
             return true;
         } catch (e) {
@@ -216,14 +220,28 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Account not in Firestore database. Prompt user to sign up
                             await firebase.auth().signOut();
                             setAuthUserState(null);
-                            showNotification("Account does not exist. Please sign up first.", "error");
+                            showAuthStatus("Account does not exist. Please sign up first.", "error");
                         }
                     } catch (err) {
                         console.error("Auth Firestore observer error:", err);
-                        setAuthUserState(null);
+                        // Offline or connection failure fallback
+                        setAuthUserState({
+                            uid: firebaseUser.uid,
+                            displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+                            email: firebaseUser.email,
+                            role: 'client'
+                        });
                     }
                 } else {
                     setAuthUserState(null);
+                    if (userOrdersListener) {
+                        userOrdersListener();
+                        userOrdersListener = null;
+                    }
+                    if (userAppsListener) {
+                        userAppsListener();
+                        userAppsListener = null;
+                    }
                 }
             });
         } else {
@@ -253,18 +271,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Start authentication sign-in
                     const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
                     const uid = userCredential.user.uid;
-                    // Double check Firestore doc existence
-                    const userDoc = await db.collection('users').doc(uid).get();
-                    if (!userDoc.exists) {
+                    
+                    let userDoc = null;
+                    let isOffline = false;
+                    try {
+                        userDoc = await db.collection('users').doc(uid).get();
+                    } catch (dbErr) {
+                        console.warn("Firestore user check failed, falling back to Auth details:", dbErr);
+                        isOffline = true;
+                    }
+
+                    if (!isOffline && userDoc && !userDoc.exists) {
                         await firebase.auth().signOut();
-                        showNotification("Account does not exist. Please sign up first.", "error");
+                        showAuthStatus("Account does not exist. Please sign up first.", "error");
                         return;
                     }
-                    showNotification("Logged in successfully!", "success");
-                    closeAuthModal();
+
+                    showAuthStatus(isOffline ? "Logged in successfully (Offline mode)!" : "Logged in successfully!", "success");
+                    if (isOffline) {
+                        setAuthUserState({
+                            uid: uid,
+                            displayName: userCredential.user.displayName || email.split('@')[0],
+                            email: email,
+                            role: 'client'
+                        });
+                    }
+                    setTimeout(closeAuthModal, 1000);
                 } catch (err) {
                     console.error("Firebase Sign In Error:", err);
-                    showNotification(err.message || "Invalid credentials.", "error");
+                    showAuthStatus(err.message || "Invalid credentials.", "error");
                 }
             } else {
                 // LocalStorage Fallback
@@ -299,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('signup-password').value;
 
             if (password.length < 6) {
-                showNotification("Password must be at least 6 characters.", "warn");
+                showAuthStatus("Password must be at least 6 characters.", "warn");
                 return;
             }
 
@@ -314,20 +349,37 @@ document.addEventListener('DOMContentLoaded', () => {
                         role: 'client',
                         createdAt: new Date().toISOString()
                     };
-                    // Write profile to Firestore
-                    await db.collection('users').doc(uid).set(newUserData);
-                    showNotification("Account created successfully! Logging in...", "success");
-                    closeAuthModal();
+                    
+                    // Write profile to Firestore (catch any write errors gracefully, e.g. client offline)
+                    let isWriteOk = true;
+                    try {
+                        await db.collection('users').doc(uid).set(newUserData);
+                    } catch (dbErr) {
+                        console.warn("Failed to write user profile to Firestore (offline fallback):", dbErr);
+                        isWriteOk = false;
+                    }
+
+                    showAuthStatus(isWriteOk ? "Account created successfully! Logging in..." : "Account created successfully (Offline mode)!", "success");
+                    
+                    // In offline fallback, auth observer might fail to query userDoc, so we set user state here too
+                    setAuthUserState({
+                        uid: uid,
+                        displayName: name,
+                        email: email,
+                        role: 'client'
+                    });
+                    
+                    setTimeout(closeAuthModal, 1000);
                 } catch (err) {
                     console.error("Firebase Sign Up Error:", err);
-                    showNotification(err.message || "Registration failed.", "error");
+                    showAuthStatus(err.message || "Registration failed.", "error");
                 }
             } else {
                 // LocalStorage Fallback
                 let localUsers = [];
                 try { localUsers = JSON.parse(localStorage.getItem('client_users') || '[]'); } catch {}
                 if (localUsers.some(u => u.email === email)) {
-                    showNotification("Account already exists with this email.", "warn");
+                    showAuthStatus("Account already exists with this email.", "warn");
                     return;
                 }
                 const passHash = await sha256(password);
@@ -348,8 +400,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 localStorage.setItem('active_client_user', JSON.stringify(loggedInUser));
                 setAuthUserState(loggedInUser);
-                showNotification("Account created successfully!", "success");
-                closeAuthModal();
+                showAuthStatus("Account created successfully!", "success");
+                setTimeout(closeAuthModal, 1000);
             }
         });
     }
@@ -358,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (googleAuthBtn) {
         googleAuthBtn.addEventListener('click', async () => {
             if (!isFirebaseActive) {
-                showNotification("Google Authentication is only available in cloud deployment mode.", "warn");
+                showAuthStatus("Google Authentication is only available in cloud deployment mode.", "warn");
                 return;
             }
             try {
@@ -367,34 +419,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 const firebaseUser = userCredential.user;
                 const uid = firebaseUser.uid;
 
-                // Check if account exists
-                const userDoc = await db.collection('users').doc(uid).get();
-                if (userDoc.exists) {
+                let userDoc = null;
+                let isOffline = false;
+                try {
+                    userDoc = await db.collection('users').doc(uid).get();
+                } catch (dbErr) {
+                    console.warn("Firestore user check failed (degraded/offline mode):", dbErr);
+                    isOffline = true;
+                }
+
+                if (!isOffline && userDoc && userDoc.exists) {
                     // Sign In Successful
-                    showNotification(`Welcome back, ${userDoc.data().displayName}!`, "success");
-                    closeAuthModal();
+                    showAuthStatus(`Welcome back, ${userDoc.data().displayName}!`, "success");
+                    setTimeout(closeAuthModal, 1000);
                 } else {
                     // Check if it is a sign-up action or block
                     const isSignUpTab = tabSignUp.classList.contains('active');
-                    if (!isSignUpTab) {
+                    if (!isSignUpTab && !isOffline) {
                         await firebase.auth().signOut();
-                        showNotification("Account does not exist. Please sign up first.", "error");
+                        showAuthStatus("Account does not exist. Please sign up first.", "error");
                         return;
                     }
-                    // Sign Up Flow - Create user doc
+                    
+                    // Create user profile object
                     const newUserData = {
                         displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
                         email: firebaseUser.email,
                         role: 'client',
                         createdAt: new Date().toISOString()
                     };
-                    await db.collection('users').doc(uid).set(newUserData);
-                    showNotification("Google Account registered successfully!", "success");
-                    closeAuthModal();
+
+                    if (!isOffline) {
+                        try {
+                            await db.collection('users').doc(uid).set(newUserData);
+                        } catch (writeErr) {
+                            console.error("Failed to save user doc to Firestore:", writeErr);
+                        }
+                    }
+
+                    showAuthStatus(isOffline ? "Logged in successfully (Offline mode)!" : "Google Account registered successfully!", "success");
+                    
+                    // Ensure the client state is set
+                    setAuthUserState({
+                        uid: uid,
+                        displayName: newUserData.displayName,
+                        email: newUserData.email,
+                        role: 'client'
+                    });
+                    
+                    setTimeout(closeAuthModal, 1000);
                 }
             } catch (err) {
                 console.error("Google Auth error:", err);
-                showNotification(err.message || "Google authentication failed.", "error");
+                showAuthStatus(err.message || "Google authentication failed.", "error");
             }
         });
     }
@@ -478,6 +555,12 @@ document.addEventListener('DOMContentLoaded', () => {
             userOrdersListener = null;
         }
 
+        if (userAppsListener) {
+            // Unsubscribe existing listener to prevent leaks
+            userAppsListener();
+            userAppsListener = null;
+        }
+
         // Render orders list
         if (isFirebaseActive && db) {
             userOrdersListener = db.collection('orders')
@@ -496,6 +579,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
         } else {
             displayLocalUserOrders();
+        }
+
+        // Render applications list
+        if (isFirebaseActive && db) {
+            userAppsListener = db.collection('applications')
+                .where('email', '==', currentUser.email)
+                .onSnapshot((snapshot) => {
+                    let apps = [];
+                    snapshot.forEach(doc => {
+                        apps.push({ id: doc.id, ...doc.data() });
+                    });
+                    apps.sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+                    displayUserApplications(apps);
+                }, (err) => {
+                    console.error("Error listening to user applications:", err);
+                    displayLocalUserApplications();
+                });
+        } else {
+            displayLocalUserApplications();
         }
     }
 
@@ -583,6 +685,52 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             return orderHtml;
+        }).join('');
+        bindHover();
+    }
+
+    function displayLocalUserApplications() {
+        let localApps = [];
+        try { localApps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
+        const filtered = localApps.filter(a => a.email === currentUser.email);
+        filtered.sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+        displayUserApplications(filtered);
+    }
+
+    function displayUserApplications(apps) {
+        const container = document.getElementById('profile-applications-container');
+        if (!container) return;
+        if (apps.length === 0) {
+            container.innerHTML = '<p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 20px;">No applications found. Apply to work with us under Careers!</p>';
+            return;
+        }
+
+        container.innerHTML = apps.map(app => {
+            const status = app.status || 'pending';
+            const major = app.major || 'general';
+            const dateStr = new Date(app.submittedAt).toLocaleDateString();
+
+            let statusBadgeClass = 'pending';
+            if (status === 'approved' || status === 'accepted') statusBadgeClass = 'success';
+            if (status === 'rejected') statusBadgeClass = 'rejected';
+
+            let statusLabel = status.toUpperCase();
+
+            const appHtml = `
+                <div style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 6px; padding: 15px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 5px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">
+                        <div>
+                            <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dark);">${app.id}</div>
+                            <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-top: 2px; text-transform: capitalize;">${esc(major)} Engineer Application</div>
+                        </div>
+                        <span class="tracker-value badge ${statusBadgeClass}">${statusLabel}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
+                        <div>Date: <span style="color: var(--text-primary); font-weight: 500;">${dateStr}</span></div>
+                    </div>
+                </div>
+            `;
+            return appHtml;
         }).join('');
         bindHover();
     }
@@ -1770,6 +1918,7 @@ document.addEventListener('DOMContentLoaded', () => {
         checkoutSigninBtn.addEventListener('click', () => {
             if (checkoutModal) checkoutModal.classList.remove('active');
             openAuthModal();
+            showAuthStatus("Please sign in or create an account to buy a plan.", "warn");
         });
     }
 
@@ -2582,8 +2731,8 @@ document.addEventListener('DOMContentLoaded', () => {
         menuApplyBtn.addEventListener('click', (e) => {
             e.preventDefault();
             if (!currentUser) {
-                showNotification("Please sign in or create an account to apply.", "warn");
                 openAuthModal();
+                showAuthStatus("Please sign in or create an account to apply.", "warn");
             } else {
                 setFormPrefills(currentUser);
                 openApplyModal();
