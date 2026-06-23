@@ -1618,7 +1618,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isFirebaseActive && db) {
                 try {
                     await db.collection('workers').doc(workerId).set({
-                        name: name, email: email, major: major, joinedAt: newWorker.joinedAt, twoFactorSetup: false
+                        name: name,
+                        email: email,
+                        major: major,
+                        joinedAt: newWorker.joinedAt,
+                        twoFactorSetup: false,
+                        passwordHash: passHash
                     });
                 } catch(e) {
                     console.warn('Could not sync new worker to Firestore:', e);
