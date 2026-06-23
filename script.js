@@ -1883,7 +1883,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 pad.className = 'seq-pad';
                 pad.setAttribute('data-row', row);
                 pad.setAttribute('data-col', col);
-                pad.setAttribute('aria-label', `Sequencer pad row ${row + 1} column ${col + 1}`);
                 
                 // Add click listener
                 pad.addEventListener('click', () => {
@@ -3403,22 +3402,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (careersBtn) careersBtn.click();
         }, 600);
     }
-
-    // FAQ Accordion Toggle
-    document.querySelectorAll('.faq-question').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const isOpen = btn.getAttribute('aria-expanded') === 'true';
-            document.querySelectorAll('.faq-question').forEach(b => {
-                b.setAttribute('aria-expanded', 'false');
-                b.nextElementSibling.style.maxHeight = '0';
-            });
-            if (!isOpen) {
-                btn.setAttribute('aria-expanded', 'true');
-                const answer = btn.nextElementSibling;
-                answer.style.maxHeight = answer.scrollHeight + 'px';
-            }
-        });
-    });
 
 });
 

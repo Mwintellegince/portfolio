@@ -2,8 +2,6 @@
   "version": 2,
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/about", "destination": "/about.html" },
-    { "source": "/use-cases", "destination": "/use-cases.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/policies", "destination": "/policies.html" },
     { "source": "/worker", "destination": "/worker.html" }
