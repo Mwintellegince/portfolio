@@ -696,9 +696,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.href = 'worker.html';
                 }, 1000);
             } else {
-                showNotification("You do not have a worker profile. Apply to become a worker.", "warn");
-                closeProfileModal();
-                setTimeout(() => openApplyModal(), 500);
+                let isPending = false;
+                if (isFirebaseActive && db) {
+                    try {
+                        const snapshot = await db.collection('applications').get();
+                        snapshot.forEach(d => {
+                            if (d.data().email && d.data().email.toLowerCase() === email) {
+                                isPending = true;
+                            }
+                        });
+                    } catch (err) {}
+                }
+                if (!isPending) {
+                    let localApps = [];
+                    try { localApps = JSON.parse(localStorage.getItem('client_applications') || '[]'); } catch {}
+                    if (localApps.some(a => a.email && a.email.toLowerCase() === email)) {
+                        isPending = true;
+                    }
+                }
+
+                if (isPending) {
+                    showNotification("Your application is currently under review by an administrator.", "info");
+                    closeProfileModal();
+                } else {
+                    showNotification("You do not have a worker profile. Apply to become a worker.", "warn");
+                    closeProfileModal();
+                    setTimeout(() => openApplyModal(), 500);
+                }
             }
         });
     }

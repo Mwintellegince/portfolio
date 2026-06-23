@@ -828,6 +828,12 @@
                     toast('Error locating worker profile.', 'error');
                     return;
                 }
+                
+                if (worker.isSuspended) {
+                    errorEl.textContent = "Your account has been temporarily suspended.";
+                    errorEl.classList.add('show');
+                    return;
+                }
 
                 // Verify PIN hash
                 const pinHashAttempt = await sha256(pin, email + SIGNUP_SALT);
@@ -893,6 +899,12 @@
 
                 if (!worker) {
                     errorEl.textContent = "Invalid credentials. Access denied.";
+                    errorEl.classList.add('show');
+                    return;
+                }
+
+                if (worker.isSuspended) {
+                    errorEl.textContent = "Your account has been temporarily suspended. Contact the administrator.";
                     errorEl.classList.add('show');
                     return;
                 }

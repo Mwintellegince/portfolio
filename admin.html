@@ -1487,12 +1487,26 @@
                 <input type="text" id="wm-major" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Set New Password</label>
+                <input type="text" id="wm-password" placeholder="Leave blank to keep current password" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Account Status</label>
+                <select id="wm-status" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                </select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
                 <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Joined</label>
                 <span id="wm-joined" style="color:var(--muted);font-size:.78rem;">—</span>
             </div>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">2FA Status</label>
-                <span id="wm-2fa" style="font-size:.82rem;font-weight:600;">—</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">2FA Status</label>
+                    <span id="wm-2fa" style="font-size:.82rem;font-weight:600;">—</span>
+                </div>
+                <button type="button" id="wm-reset-2fa-btn" style="padding: 6px 12px; background: rgba(220, 53, 69, 0.1); border: 1px solid var(--error); color: var(--error); border-radius: 4px; font-size: 0.75rem; cursor: none;">Reset 2FA</button>
             </div>
         </div>
         <div class="modal-actions">

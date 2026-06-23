@@ -1466,6 +1466,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('wm-name').value = w.name || '';
         document.getElementById('wm-email').value = w.email || '';
         document.getElementById('wm-major').value = w.major || '';
+        document.getElementById('wm-password').value = '';
+        document.getElementById('wm-status').value = w.isSuspended ? 'suspended' : 'active';
         document.getElementById('wm-joined').textContent = w.joinedAt ? new Date(w.joinedAt).toLocaleString('en-EG') : '—';
         const faEl = document.getElementById('wm-2fa');
         if (faEl) faEl.textContent = w.twoFactorSetup ? '2FA Enabled' : '2FA Pending';
@@ -1480,7 +1482,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const wmSaveBtn = document.getElementById('wm-save-btn');
     if (wmSaveBtn) {
-        wmSaveBtn.addEventListener('click', () => {
+        wmSaveBtn.addEventListener('click', async () => {
             if (_editWorkerIdx < 0) return;
             const workers = getWorkers();
             const w = workers[_editWorkerIdx];
@@ -1488,11 +1490,57 @@ document.addEventListener('DOMContentLoaded', () => {
             w.name = document.getElementById('wm-name').value.trim() || w.name;
             w.email = (document.getElementById('wm-email').value.trim() || w.email).toLowerCase();
             w.major = document.getElementById('wm-major').value.trim() || w.major;
+            
+            const newPassword = document.getElementById('wm-password').value.trim();
+            if (newPassword) {
+                w.passwordHash = await sha256WithSalt(newPassword, w.email + 'WORKER_PORTAL_SIGNUP_2026');
+            }
+            
+            w.isSuspended = (document.getElementById('wm-status').value === 'suspended');
+            
             saveWorkers(workers);
+            if (isFirebaseActive && db && w.id) {
+                try {
+                    await db.collection('workers').doc(w.id).set(w);
+                } catch(e) {
+                    console.warn('Could not update worker in Firestore:', e);
+                }
+            }
+            
             toast('Worker updated successfully.', 'success');
             loadAllData();
             document.getElementById('worker-modal').classList.remove('open');
             _editWorkerIdx = -1;
+        });
+    }
+
+    const wmReset2faBtn = document.getElementById('wm-reset-2fa-btn');
+    if (wmReset2faBtn) {
+        wmReset2faBtn.addEventListener('click', async () => {
+            if (_editWorkerIdx < 0) return;
+            const confirmed = await customConfirm('Force this worker to re-setup 2FA upon next login?');
+            if (!confirmed) return;
+            
+            const workers = getWorkers();
+            const w = workers[_editWorkerIdx];
+            if (!w) return;
+            
+            w.twoFactorSetup = false;
+            w.twoFactorSecret = null;
+            saveWorkers(workers);
+            
+            if (isFirebaseActive && db && w.id) {
+                try {
+                    await db.collection('workers').doc(w.id).set(w);
+                } catch(e) {
+                    console.warn('Could not reset 2FA in Firestore:', e);
+                }
+            }
+            
+            toast('Worker 2FA has been reset.', 'success');
+            document.getElementById('wm-2fa').textContent = '2FA Pending';
+            document.getElementById('wm-2fa').style.color = 'var(--gold)';
+            loadAllData();
         });
     }
 
