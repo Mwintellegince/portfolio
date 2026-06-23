@@ -491,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="font-size:.72rem;color:var(--muted);">${date}</td>
                 <td>
                     <div class="action-group">
-                        <button class="btn-view" title="View details" onclick="window._adminViewDetail(${realIdx})">
+                        <button class="btn-view" title="View details" onclick="window._adminViewOrder(${realIdx})">
                             <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         </button>
                         <button class="btn-accept" onclick="window._adminAccept(${realIdx})">Accept</button>

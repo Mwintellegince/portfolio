@@ -2356,7 +2356,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // ── KASHIER CARD FLOW ──
             if (currentPaymentMethod === 'Kashier') {
-                showNotification('Direct credit/debit card payment is temporarily undergoing system integration and security clearance. It will be fully operational as soon as possible. Please place your order using InstaPay or Vodafone Cash in the meantime.', 'warn');
+                const orderId = 'ord_' + Date.now();
+                const order = {
+                    id:            orderId,
+                    name:          clientName,
+                    email:         clientEmail,
+                    plan:          planName,
+                    price:         price + ' EGP',
+                    paymentMethod: 'Kashier',
+                    brief:         clientBrief,
+                    receipt:       null,
+                    status:        'pending',
+                    submittedAt:   new Date().toISOString()
+                };
+
+                showNotification('Initializing secure card payment...', 'info');
+
+                try {
+                    const response = await fetch('/api/kashierHash', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            orderId: orderId,
+                            amount: price
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('API server returned an error');
+                    }
+
+                    const data = await response.json();
+                    if (data.paymentUrl) {
+                        saveNewOrder(order);
+                        showNotification('Redirecting to Kashier Payment Gateway...', 'success');
+                        setTimeout(() => {
+                            window.location.href = data.paymentUrl;
+                        }, 1000);
+                    } else {
+                        throw new Error('No payment URL received');
+                    }
+                } catch (err) {
+                    console.error('Kashier card payment initialization failed:', err);
+                    showNotification('Direct card payment initialization failed. Please use InstaPay, Vodafone Cash, or try again.', 'error');
+                }
+
+                if (checkoutModal) checkoutModal.classList.remove('active');
+                checkoutForm.reset();
                 return;
             }
 

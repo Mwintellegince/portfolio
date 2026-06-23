@@ -1141,7 +1141,7 @@
                             <div class="project-card">
                                 <div class="project-meta">
                                     <span class="project-name">${esc(o.plan)}</span>
-                                    <span class="project-price" style="font-size:.75rem; color:var(--text-muted);">Lead: <strong>${esc(o.assignedWorkerName || o.assignedWorkerEmail.split('@')[0])}</strong></span>
+                                    <span class="project-price" style="font-size:.75rem; color:var(--text-muted);">Lead: <strong>${esc(o.assignedWorkerName || (o.assignedWorkerEmail ? o.assignedWorkerEmail.split('@')[0] : '—'))}</strong></span>
                                 </div>
                                 <div class="project-brief">${esc(o.brief || o.projectBrief || 'No brief provided.')}</div>
                                 <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:8px;">Helpers (${helpers.length}/3): <strong>${helpersList}</strong></div>
