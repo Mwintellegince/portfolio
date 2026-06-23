@@ -130,7 +130,69 @@ document.addEventListener('DOMContentLoaded', () => {
         if (authModal) {
             authModal.classList.remove('active');
             playTone(400, 'sine', 0.1, 0.05);
+            // Reset welcome success container state back to original form view
+            setTimeout(() => {
+                const formsContainer = document.getElementById('auth-forms-container');
+                const welcomeContainer = document.getElementById('auth-welcome-container');
+                const authTitle = document.getElementById('auth-modal-title');
+                const authSub = document.getElementById('auth-modal-sub');
+                
+                if (formsContainer) {
+                    formsContainer.style.display = '';
+                    formsContainer.style.opacity = '1';
+                    formsContainer.style.transform = 'translateY(0)';
+                }
+                if (welcomeContainer) {
+                    welcomeContainer.classList.add('hidden');
+                    welcomeContainer.style.opacity = '0';
+                    welcomeContainer.style.transform = 'translateY(15px)';
+                }
+                if (authTitle) authTitle.style.display = '';
+                if (authSub) authSub.style.display = '';
+            }, 400);
         }
+    }
+
+    function animateWelcomeSuccess(userName, isSignUp) {
+        const formsContainer = document.getElementById('auth-forms-container');
+        const welcomeContainer = document.getElementById('auth-welcome-container');
+        const authTitle = document.getElementById('auth-modal-title');
+        const authSub = document.getElementById('auth-modal-sub');
+        const welcomeTitle = document.getElementById('auth-welcome-title');
+        const welcomeText = document.getElementById('auth-welcome-text');
+
+        // Play positive tone
+        playTone(523.25, 'sine', 0.15, 0.1);
+        setTimeout(() => playTone(659.25, 'sine', 0.15, 0.1), 100);
+        setTimeout(() => playTone(783.99, 'sine', 0.3,  0.1), 200);
+
+        if (formsContainer) {
+            formsContainer.style.opacity = '0';
+            formsContainer.style.transform = 'translateY(-10px)';
+        }
+
+        setTimeout(() => {
+            if (formsContainer) formsContainer.style.display = 'none';
+            if (authTitle) authTitle.style.display = 'none';
+            if (authSub) authSub.style.display = 'none';
+
+            if (welcomeTitle) {
+                welcomeTitle.textContent = isSignUp ? "Welcome!" : "Welcome Back!";
+            }
+            if (welcomeText) {
+                welcomeText.textContent = userName ? `${userName}` : "You have been successfully authenticated.";
+            }
+
+            if (welcomeContainer) {
+                welcomeContainer.classList.remove('hidden');
+                // Trigger reflow
+                welcomeContainer.offsetHeight;
+                welcomeContainer.style.opacity = '1';
+                welcomeContainer.style.transform = 'translateY(0)';
+            }
+        }, 300);
+
+        setTimeout(closeAuthModal, 2200);
     }
 
     function openProfileModal() {
@@ -193,7 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentUser = user;
         if (menuAuthBtn) {
             menuAuthBtn.innerHTML = user ? `
-                <span class="nav-num">09</span>
                 <span class="profile-nav-icon" style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--accent); background: rgba(212, 175, 55, 0.05); padding: 2px; vertical-align: middle; transition: all 0.2s; margin-top: -2px;">
                     <svg viewBox="0 0 24 24" style="width: 100%; height: 100%; fill: none; stroke: var(--accent); stroke-width: 2.2; transition: stroke 0.2s;">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -302,16 +363,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
 
+                    let name = "";
+                    if (!isOffline && userDoc && userDoc.exists) {
+                        name = userDoc.data().displayName;
+                    } else {
+                        name = userCredential.user.displayName || email.split('@')[0];
+                    }
+
                     showAuthStatus(isOffline ? "Logged in successfully (Offline mode)!" : "Logged in successfully!", "success");
                     if (isOffline) {
                         setAuthUserState({
                             uid: uid,
-                            displayName: userCredential.user.displayName || email.split('@')[0],
+                            displayName: name,
                             email: email,
                             role: 'client'
                         });
                     }
-                    setTimeout(closeAuthModal, 1000);
+                    animateWelcomeSuccess(name, false);
                 } catch (err) {
                     console.error("Firebase Sign In Error:", err);
                     showAuthStatus(err.message || "Invalid credentials.", "error");
@@ -331,10 +399,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                     localStorage.setItem('active_client_user', JSON.stringify(loggedInUser));
                     setAuthUserState(loggedInUser);
-                    showNotification("Logged in successfully!", "success");
-                    closeAuthModal();
+                    animateWelcomeSuccess(user.displayName, false);
                 } else {
-                    showNotification("Account does not exist or invalid credentials.", "error");
+                    showAuthStatus("Account does not exist or invalid credentials.", "error");
                 }
             }
         });
@@ -384,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         role: 'client'
                     });
                     
-                    setTimeout(closeAuthModal, 1000);
+                    animateWelcomeSuccess(name, true);
                 } catch (err) {
                     console.error("Firebase Sign Up Error:", err);
                     showAuthStatus(err.message || "Registration failed.", "error");
@@ -415,8 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 localStorage.setItem('active_client_user', JSON.stringify(loggedInUser));
                 setAuthUserState(loggedInUser);
-                showAuthStatus("Account created successfully!", "success");
-                setTimeout(closeAuthModal, 1000);
+                animateWelcomeSuccess(name, true);
             }
         });
     }
@@ -445,8 +511,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (!isOffline && userDoc && userDoc.exists) {
                     // Sign In Successful
-                    showAuthStatus(`Welcome back, ${userDoc.data().displayName}!`, "success");
-                    setTimeout(closeAuthModal, 1000);
+                    const name = userDoc.data().displayName;
+                    showAuthStatus(`Welcome back, ${name}!`, "success");
+                    animateWelcomeSuccess(name, false);
                 } else {
                     // Check if it is a sign-up action or block
                     const isSignUpTab = tabSignUp.classList.contains('active');
@@ -482,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         role: 'client'
                     });
                     
-                    setTimeout(closeAuthModal, 1000);
+                    animateWelcomeSuccess(newUserData.displayName, true);
                 }
             } catch (err) {
                 console.error("Google Auth error:", err);
@@ -1876,6 +1943,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 if (authWarning) authWarning.classList.add('hidden');
                 if (paymentWrapper) paymentWrapper.classList.remove('hidden');
+                if (submitBtn) submitBtn.style.display = ''; // Restore submit button display
                 
                 setFormPrefills(currentUser);
                 setPaymentMethod('Kashier');

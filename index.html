@@ -868,58 +868,72 @@
             <h2 class="checkout-title" id="auth-modal-title" style="margin-bottom: 5px;">Sign In</h2>
             <p class="checkout-sub" id="auth-modal-sub" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">Access your account to order plans and apply for careers.</p>
             
-            <!-- Tab switches -->
-            <div style="display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 20px;">
-                <button id="tab-signin" class="plans-tab-btn active" style="flex: 1; padding: 10px; border: none; background: transparent; color: inherit; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; cursor: none;">Sign In</button>
-                <button id="tab-signup" class="plans-tab-btn" style="flex: 1; padding: 10px; border: none; background: transparent; color: inherit; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; cursor: none;">Sign Up</button>
+            <div id="auth-forms-container" style="transition: all 0.3s ease; opacity: 1; transform: translateY(0);">
+                <!-- Tab switches -->
+                <div style="display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 20px;">
+                    <button id="tab-signin" class="plans-tab-btn active" style="flex: 1; padding: 10px; border: none; background: transparent; color: inherit; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; cursor: none;">Sign In</button>
+                    <button id="tab-signup" class="plans-tab-btn" style="flex: 1; padding: 10px; border: none; background: transparent; color: inherit; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; cursor: none;">Sign Up</button>
+                </div>
+
+                <!-- Sign In Form -->
+                <form id="signin-form" class="checkout-form">
+                    <div class="form-group">
+                        <label for="signin-email">Email Address</label>
+                        <input type="email" id="signin-email" required placeholder="e.g. jane@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="signin-password">Password</label>
+                        <input type="password" id="signin-password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-primary checkout-submit-btn" style="margin-top: 10px; width: 100%; justify-content: center;">
+                        <span>Sign In</span>
+                    </button>
+                </form>
+
+                <!-- Sign Up Form (hidden by default) -->
+                <form id="signup-form" class="checkout-form hidden">
+                    <div class="form-group">
+                        <label for="signup-name">Full Name</label>
+                        <input type="text" id="signup-name" required placeholder="e.g. Jane Doe">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-email">Email Address</label>
+                        <input type="email" id="signup-email" required placeholder="e.g. jane@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">Password</label>
+                        <input type="password" id="signup-password" required placeholder="Min 6 characters">
+                    </div>
+                    <button type="submit" class="btn-primary checkout-submit-btn" style="margin-top: 10px; width: 100%; justify-content: center;">
+                        <span>Sign Up</span>
+                    </button>
+                </form>
+
+                <!-- Google OAuth Divider -->
+                <div style="text-align: center; margin: 20px 0; font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dark); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 10px;">
+                    <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+                    <span>or continue with</span>
+                    <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+                </div>
+
+                <!-- Google button -->
+                <button id="google-auth-btn" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;">
+                    <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor; margin-right: 8px;"><path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-6.887 4.114-4.78 0-8.67-3.923-8.67-8.67s3.89-8.67 8.67-8.67c2.26 0 4.385.85 6.002 2.232l3.21-3.21C18.665.986 15.6.02 12.24.02 5.58.02.15 5.45.15 12.11s5.43 12.09 12.09 12.09c6.96 0 11.57-4.89 11.57-11.79 0-.795-.085-1.564-.23-2.31H12.24z"/></svg>
+                    <span id="google-btn-text">Google Account</span>
+                </button>
             </div>
 
-            <!-- Sign In Form -->
-            <form id="signin-form" class="checkout-form">
-                <div class="form-group">
-                    <label for="signin-email">Email Address</label>
-                    <input type="email" id="signin-email" required placeholder="e.g. jane@example.com">
+            <!-- Welcome Success Message Container -->
+            <div id="auth-welcome-container" class="hidden" style="text-align: center; padding: 30px 10px; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; transform: translateY(15px);">
+                <div class="welcome-avatar" style="width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; background: rgba(212, 175, 55, 0.03); color: var(--accent); box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);">
+                    <svg viewBox="0 0 24 24" style="width: 32px; height: 32px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg>
                 </div>
-                <div class="form-group">
-                    <label for="signin-password">Password</label>
-                    <input type="password" id="signin-password" required placeholder="••••••••">
-                </div>
-                <button type="submit" class="btn-primary checkout-submit-btn" style="margin-top: 10px; width: 100%; justify-content: center;">
-                    <span>Sign In</span>
-                </button>
-            </form>
-
-            <!-- Sign Up Form (hidden by default) -->
-            <form id="signup-form" class="checkout-form hidden">
-                <div class="form-group">
-                    <label for="signup-name">Full Name</label>
-                    <input type="text" id="signup-name" required placeholder="e.g. Jane Doe">
-                </div>
-                <div class="form-group">
-                    <label for="signup-email">Email Address</label>
-                    <input type="email" id="signup-email" required placeholder="e.g. jane@example.com">
-                </div>
-                <div class="form-group">
-                    <label for="signup-password">Password</label>
-                    <input type="password" id="signup-password" required placeholder="Min 6 characters">
-                </div>
-                <button type="submit" class="btn-primary checkout-submit-btn" style="margin-top: 10px; width: 100%; justify-content: center;">
-                    <span>Sign Up</span>
-                </button>
-            </form>
-
-            <!-- Google OAuth Divider -->
-            <div style="text-align: center; margin: 20px 0; font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-dark); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 10px;">
-                <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
-                <span>or continue with</span>
-                <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+                <h3 id="auth-welcome-title" style="font-family: var(--font-serif); font-size: 1.5rem; color: var(--text-light); margin-bottom: 8px;">Welcome!</h3>
+                <p id="auth-welcome-text" style="font-family: var(--font-sans); font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;"></p>
             </div>
-
-            <!-- Google button -->
-            <button id="google-auth-btn" class="btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;">
-                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor; margin-right: 8px;"><path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-6.887 4.114-4.78 0-8.67-3.923-8.67-8.67s3.89-8.67 8.67-8.67c2.26 0 4.385.85 6.002 2.232l3.21-3.21C18.665.986 15.6.02 12.24.02 5.58.02.15 5.45.15 12.11s5.43 12.09 12.09 12.09c6.96 0 11.57-4.89 11.57-11.79 0-.795-.085-1.564-.23-2.31H12.24z"/></svg>
-                <span id="google-btn-text">Google Account</span>
-            </button>
         </div>
     </div>
 
