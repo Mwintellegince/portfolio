@@ -716,6 +716,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (appStatus === 'pending') {
                     showNotification("Your application is currently under review by an administrator.", "info");
                     closeProfileModal();
+                } else if (appStatus === 'approved') {
+                    showNotification("Your application has been approved! Redirecting to Worker Portal...", "success");
+                    closeProfileModal();
+                    setTimeout(() => { window.location.href = 'worker.html'; }, 1000);
                 } else if (appStatus === 'rejected') {
                     showNotification(`Your application was rejected: ${rejectionReason}`, "error");
                     closeProfileModal();
@@ -3040,6 +3044,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (doc.exists) {
                     isWorker = true;
                     workerObj = { id: doc.id, ...doc.data() };
+                } else {
+                    const snapshot = await db.collection('workers').where('email', '==', email).get();
+                    snapshot.forEach(d => {
+                        isWorker = true;
+                        workerObj = { id: d.id, ...d.data() };
+                    });
                 }
             } catch (err) {}
         }
@@ -3086,6 +3096,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (appStatus === 'pending') {
             showNotification('Your application is currently under review by an administrator.', 'info');
+            return;
+        } else if (appStatus === 'approved') {
+            showNotification('Your application has been approved! Redirecting to Worker Portal...', 'success');
+            setTimeout(() => { window.location.href = 'worker.html'; }, 1000);
             return;
         } else if (appStatus === 'rejected') {
             showNotification(`Your previous application was rejected: ${rejectionReason}. You may apply again.`, 'warn');
