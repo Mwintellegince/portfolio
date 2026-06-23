@@ -45,11 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Firebase Firestore initialized on admin side.");
             
             setupFirebaseListeners();
-            await loadAllData();
+            loadAllData();
+            syncFromFirestore();
             return true;
         } catch (e) {
             console.error("Failed to initialize Firebase on admin:", e);
-            await loadAllData();
+            loadAllData();
             return false;
         }
     }
@@ -61,10 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
             db.collection(collectionName).onSnapshot(snapshot => {
                 const docs = [];
                 snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
-                // Only overwrite localStorage if snapshot has data or localStorage is empty
-                const existing = localStorage.getItem(localStorageKey);
-                if (docs.length || !existing || JSON.parse(existing).length === 0) {
-                    localStorage.setItem(localStorageKey, JSON.stringify(docs));
+                // Merge: keep localStorage users that don't exist in Firestore, add Firestore users not in localStorage
+                let existing = [];
+                try { existing = JSON.parse(localStorage.getItem(localStorageKey) || '[]'); } catch {}
+                if (docs.length || existing.length) {
+                    const merged = {};
+                    docs.forEach(d => merged[d.email || d.id] = d);
+                    existing.forEach(e => { if (!merged[e.email || e.id]) merged[e.email || e.id] = e; });
+                    localStorage.setItem(localStorageKey, JSON.stringify(Object.values(merged)));
                 }
                 loadAllData();
                 if (onUpdate) onUpdate(docs);
@@ -324,30 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('client_users', JSON.stringify(arr));
     }
 
-    async function loadAllData() {
-        // Only fetch from Firestore if localStorage is empty — preserves previously stored data
-        if (isFirebaseActive && db) {
-            const collections = [
-                { name: 'orders',      key: 'client_orders' },
-                { name: 'users',       key: 'client_users' },
-                { name: 'applications', key: 'client_applications' },
-                { name: 'announcements',key: 'client_announcements' },
-                { name: 'workers',     key: 'client_workers' },
-            ];
-            for (const c of collections) {
-                const existing = localStorage.getItem(c.key);
-                if (!existing || JSON.parse(existing).length === 0) {
-                    try {
-                        const snap = await db.collection(c.name).get();
-                        const docs = [];
-                        snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
-                        if (docs.length) localStorage.setItem(c.key, JSON.stringify(docs));
-                    } catch (e) {
-                        // collection may not exist yet
-                    }
-                }
-            }
-        }
+    function loadAllData() {
         renderStats();
         renderPending();
         renderHistory();
@@ -358,6 +340,36 @@ document.addEventListener('DOMContentLoaded', () => {
         updateBadges();
         renderUsers();
         renderWorkers();
+    }
+
+    // Separate async sync — fetches from Firestore into localStorage when localStorage is empty
+    async function syncFromFirestore() {
+        if (!isFirebaseActive || !db) return;
+        const collections = [
+            { name: 'orders',      key: 'client_orders' },
+            { name: 'users',       key: 'client_users' },
+            { name: 'applications', key: 'client_applications' },
+            { name: 'announcements',key: 'client_announcements' },
+            { name: 'workers',     key: 'client_workers' },
+        ];
+        for (const c of collections) {
+            let local = [];
+            try { local = JSON.parse(localStorage.getItem(c.key) || '[]'); } catch {}
+            try {
+                const snap = await db.collection(c.name).get();
+                const docs = [];
+                snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+                if (docs.length || local.length) {
+                    const merged = {};
+                    docs.forEach(d => merged[d.email || d.id] = d);
+                    local.forEach(e => { if (!merged[e.email || e.id]) merged[e.email || e.id] = e; });
+                    localStorage.setItem(c.key, JSON.stringify(Object.values(merged)));
+                }
+            } catch (e) {
+                // collection may not exist yet
+            }
+        }
+        loadAllData();
     }
 
     /* =====================================================================
@@ -375,7 +387,9 @@ document.addEventListener('DOMContentLoaded', () => {
         setText('stat-sales',    `${sales.toLocaleString('en-EG')} EGP`);
         setText('stat-refunds',  `${refunds.toLocaleString('en-EG')} EGP`);
         setText('stat-pending',  pending);
-        setText('stat-total',    orders.length);
+        setText('stat-users',    getUsers().length);
+        const statTotal = document.getElementById('stat-total');
+        if (statTotal) statTotal.textContent = orders.length;
     }
 
     function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
@@ -405,14 +419,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPending() {
         const tbody  = document.getElementById('pending-tbody');
         if (!tbody) return;
-        const orders = getOrders().filter(o => !o.status || o.status === 'pending');
+        const allOrders = getOrders();
+        const orders = allOrders.filter(o => !o.status || o.status === 'pending');
 
         if (!orders.length) {
             tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No pending orders — all clear.</td></tr>';
             return;
         }
 
-        tbody.innerHTML = orders.map((o, idx) => {
+        tbody.innerHTML = orders.map((o) => {
             let payBadge = '';
             if (o.paymentMethod === 'instapay') {
                 payBadge = '<span class="badge instapay">InstaPay</span>';
@@ -436,9 +451,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? new Date(o.submittedAt).toLocaleDateString('en-EG', { day:'numeric', month:'short', year:'numeric' })
                 : '—';
 
-            const realIdx = getOrders().indexOf(getOrders().find(x =>
+            const realIdx = allOrders.findIndex(x =>
                 x.name === o.name && x.submittedAt === o.submittedAt && x.plan === o.plan
-            ));
+            );
 
             return `<tr>
                 <td>
@@ -630,32 +645,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Refund modal
+    // Refund modal (refs used later for patching)
     const refundModal   = document.getElementById('refund-modal');
     const rmConfirmBtn  = document.getElementById('rm-confirm');
     const rmCancelBtn   = document.getElementById('rm-cancel');
-
-    if (rmConfirmBtn) {
-        rmConfirmBtn.addEventListener('click', async () => {
-            if (pendingRejectIdx < 0) return;
-            const orders = getOrders();
-            orders[pendingRejectIdx].status      = 'rejected';
-            orders[pendingRejectIdx].completedAt = new Date().toISOString();
-            saveOrders(orders);
-            toast(`Refund confirmed. Order rejected.`, 'error');
-            refundModal.classList.remove('open');
-            const updatedOrder = orders[pendingRejectIdx];
-            pendingRejectIdx = -1;
-            loadAllData();
-            await syncOrderUpdate(updatedOrder);
-        });
-    }
-    if (rmCancelBtn) {
-        rmCancelBtn.addEventListener('click', () => {
-            refundModal.classList.remove('open');
-            pendingRejectIdx = -1;
-        });
-    }
 
     /* =====================================================================
        RECEIPT VIEWER
@@ -789,15 +782,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const users = getUsers();
         if (!users.length) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No users registered yet.</td></tr>';
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No users registered yet.</td></tr>';
             return;
         }
 
-        tbody.innerHTML = users.map(u => {
+        tbody.innerHTML = users.map((u, idx) => {
             const dateStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-EG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
             const role = u.role || 'client';
-            
-            // Count how many orders this user placed
             const orders = getOrders();
             const orderCount = orders.filter(o => o.email === u.email).length;
 
@@ -810,6 +801,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td><span class="badge card">${esc(role)}</span></td>
                     <td>${dateStr}</td>
                     <td><strong style="color:var(--text);">${orderCount}</strong></td>
+                    <td>
+                        <div class="action-group">
+                            <button class="btn-view" title="View details" onclick="window._adminViewUser(${idx})">
+                                <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            </button>
+                            <button class="btn-accept" onclick="window._adminEditUser(${idx})" style="padding:4px 8px;font-size:.62rem;">Edit</button>
+                            <button class="btn-reject" onclick="window._adminDeleteUser(${idx})" style="padding:4px 8px;font-size:.62rem;">Delete</button>
+                        </div>
+                    </td>
                 </tr>
             `;
         }).join('');
@@ -821,7 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const workers = getWorkers();
         if (!workers.length) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No workers registered yet.</td></tr>';
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No workers registered yet.</td></tr>';
             return;
         }
 
@@ -838,6 +838,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td><strong style="color:var(--text);">${esc(w.major)}</strong></td>
                     <td>${dateStr}</td>
                     <td>${faStatus}</td>
+                    <td>
+                        <div class="action-group">
+                            <button class="btn-view" title="View details" onclick="window._adminViewWorker(${idx})">
+                                <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            </button>
+                            <button class="btn-accept" onclick="window._adminEditWorker(${idx})" style="padding:4px 8px;font-size:.62rem;">Edit</button>
+                            <button class="btn-reject" onclick="window._adminDeleteWorker(${idx})" style="padding:4px 8px;font-size:.62rem;">Delete</button>
+                        </div>
+                    </td>
                 </tr>
             `;
         }).join('');
@@ -1286,6 +1295,400 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+    }
+
+    /* ==========================================================================
+       USER MANAGEMENT
+       ========================================================================== */
+    let _editUserIdx = -1;
+
+    window._adminViewUser = function(idx) {
+        const users = getUsers();
+        const u = users[idx];
+        if (!u) return;
+        document.getElementById('um-id').textContent = u.email || `User #${idx + 1}`;
+        document.getElementById('um-name').value = u.displayName || u.name || '';
+        document.getElementById('um-email').value = u.email || '';
+        document.getElementById('um-role').value = u.role || 'client';
+        document.getElementById('um-created').textContent = u.createdAt ? new Date(u.createdAt).toLocaleString('en-EG') : '—';
+        const userOrders = getOrders().filter(o => o.email === u.email);
+        document.getElementById('um-orders').textContent = userOrders.length;
+        _editUserIdx = idx;
+        document.getElementById('user-modal').classList.add('open');
+    };
+
+    window._adminEditUser = function(idx) {
+        window._adminViewUser(idx);
+    };
+
+    const umSaveBtn = document.getElementById('um-save-btn');
+    if (umSaveBtn) {
+        umSaveBtn.addEventListener('click', () => {
+            if (_editUserIdx < 0) return;
+            const users = getUsers();
+            const u = users[_editUserIdx];
+            if (!u) return;
+            u.displayName = document.getElementById('um-name').value.trim() || u.displayName;
+            u.email = document.getElementById('um-email').value.trim() || u.email;
+            u.role = document.getElementById('um-role').value;
+            saveUsers(users);
+            toast('User updated successfully.', 'success');
+            loadAllData();
+            document.getElementById('user-modal').classList.remove('open');
+            _editUserIdx = -1;
+        });
+    }
+
+    const umCloseBtn = document.getElementById('um-close-btn');
+    if (umCloseBtn) {
+        umCloseBtn.addEventListener('click', () => {
+            document.getElementById('user-modal').classList.remove('open');
+            _editUserIdx = -1;
+        });
+    }
+
+    window._adminDeleteUser = async function(idx) {
+        if (!confirm('Are you sure you want to delete this user? This cannot be undone.')) return;
+        const users = getUsers();
+        const u = users[idx];
+        if (!u) return;
+        users.splice(idx, 1);
+        saveUsers(users);
+        if (isFirebaseActive && db && u.uid) {
+            try {
+                await db.collection('users').doc(u.uid).delete();
+            } catch(e) {
+                console.warn('Could not delete from Firestore:', e);
+            }
+        }
+        toast(`User ${u.displayName || u.email} deleted.`, 'error');
+        loadAllData();
+    };
+
+    const addUserForm = document.getElementById('add-user-form');
+    if (addUserForm) {
+        addUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('add-user-name').value.trim();
+            const email = document.getElementById('add-user-email').value.trim();
+            const password = document.getElementById('add-user-password').value.trim();
+            const role = document.getElementById('add-user-role').value;
+            if (!name || !email || !password) { toast('Please fill all fields.', 'error'); return; }
+            const users = getUsers();
+            if (users.some(u => u.email === email)) { toast('A user with this email already exists.', 'error'); return; }
+            const newUser = {
+                uid: 'usr_' + Date.now(),
+                displayName: name,
+                email: email,
+                role: role,
+                passwordHash: await sha256(password),
+                createdAt: new Date().toISOString()
+            };
+            users.push(newUser);
+            saveUsers(users);
+            if (isFirebaseActive && db) {
+                try {
+                    await db.collection('users').doc(newUser.uid).set({
+                        displayName: name,
+                        email: email,
+                        role: role,
+                        createdAt: newUser.createdAt
+                    });
+                } catch(e) {
+                    console.warn('Could not sync new user to Firestore:', e);
+                }
+            }
+            toast(`User ${name} created successfully.`, 'success');
+            addUserForm.reset();
+            loadAllData();
+        });
+    }
+
+    /* ==========================================================================
+       WORKER MANAGEMENT
+       ========================================================================== */
+    let _editWorkerIdx = -1;
+
+    window._adminViewWorker = function(idx) {
+        const workers = getWorkers();
+        const w = workers[idx];
+        if (!w) return;
+        document.getElementById('wm-id').textContent = w.email || `Worker #${idx + 1}`;
+        document.getElementById('wm-name').value = w.name || '';
+        document.getElementById('wm-email').value = w.email || '';
+        document.getElementById('wm-major').value = w.major || '';
+        document.getElementById('wm-joined').textContent = w.joinedAt ? new Date(w.joinedAt).toLocaleString('en-EG') : '—';
+        const faEl = document.getElementById('wm-2fa');
+        if (faEl) faEl.textContent = w.twoFactorSetup ? '2FA Enabled' : '2FA Pending';
+        faEl.style.color = w.twoFactorSetup ? 'var(--green)' : 'var(--gold)';
+        _editWorkerIdx = idx;
+        document.getElementById('worker-modal').classList.add('open');
+    };
+
+    window._adminEditWorker = function(idx) {
+        window._adminViewWorker(idx);
+    };
+
+    const wmSaveBtn = document.getElementById('wm-save-btn');
+    if (wmSaveBtn) {
+        wmSaveBtn.addEventListener('click', () => {
+            if (_editWorkerIdx < 0) return;
+            const workers = getWorkers();
+            const w = workers[_editWorkerIdx];
+            if (!w) return;
+            w.name = document.getElementById('wm-name').value.trim() || w.name;
+            w.email = document.getElementById('wm-email').value.trim() || w.email;
+            w.major = document.getElementById('wm-major').value.trim() || w.major;
+            saveWorkers(workers);
+            toast('Worker updated successfully.', 'success');
+            loadAllData();
+            document.getElementById('worker-modal').classList.remove('open');
+            _editWorkerIdx = -1;
+        });
+    }
+
+    const wmCloseBtn = document.getElementById('wm-close-btn');
+    if (wmCloseBtn) {
+        wmCloseBtn.addEventListener('click', () => {
+            document.getElementById('worker-modal').classList.remove('open');
+            _editWorkerIdx = -1;
+        });
+    }
+
+    window._adminDeleteWorker = async function(idx) {
+        if (!confirm('Are you sure you want to remove this worker?')) return;
+        const workers = getWorkers();
+        const w = workers[idx];
+        if (!w) return;
+        workers.splice(idx, 1);
+        saveWorkers(workers);
+        if (isFirebaseActive && db && w.id) {
+            try {
+                await db.collection('workers').doc(w.id).delete();
+            } catch(e) {
+                console.warn('Could not delete worker from Firestore:', e);
+            }
+        }
+        toast(`Worker ${w.name} removed.`, 'error');
+        loadAllData();
+    };
+
+    const addWorkerForm = document.getElementById('add-worker-form');
+    if (addWorkerForm) {
+        addWorkerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('add-worker-name').value.trim();
+            const email = document.getElementById('add-worker-email').value.trim();
+            const major = document.getElementById('add-worker-major').value.trim();
+            const password = document.getElementById('add-worker-password').value.trim();
+            if (!name || !email || !major || !password) { toast('Please fill all fields.', 'error'); return; }
+            const workers = getWorkers();
+            if (workers.some(w => w.email === email)) { toast('A worker with this email already exists.', 'error'); return; }
+            const workerId = 'work_' + email.replace(/\./g, '_');
+            const passHash = await sha256WithSalt(password, email + 'WORKER_PORTAL_SIGNUP_2026');
+            const newWorker = {
+                id: workerId,
+                name: name,
+                email: email,
+                major: major,
+                passwordHash: passHash,
+                joinedAt: new Date().toISOString(),
+                twoFactorSetup: false
+            };
+            workers.push(newWorker);
+            saveWorkers(workers);
+            if (isFirebaseActive && db) {
+                try {
+                    await db.collection('workers').doc(workerId).set({
+                        name: name, email: email, major: major, joinedAt: newWorker.joinedAt, twoFactorSetup: false
+                    });
+                } catch(e) {
+                    console.warn('Could not sync new worker to Firestore:', e);
+                }
+            }
+            toast(`Worker ${name} created successfully.`, 'success');
+            addWorkerForm.reset();
+            loadAllData();
+        });
+    }
+
+    /* ==========================================================================
+       AUTO-EMAIL ON ORDER APPROVAL/REJECTION via Brevo (formerly Sendinblue)
+       ========================================================================== */
+    const BREVO_API_KEY = import.meta.env.VITE_BREVO_API_KEY || '';
+    const BREVO_SENDER = { name: 'MW Intelligence', email: 'noreply@mwintellegince.com' };
+
+    function buildEmailBody(order, action) {
+        if (action === 'approved') {
+            return `
+                <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;">
+                    <div style="background:#d4af37;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+                        <h1 style="color:#0a0a0c;margin:0;font-size:22px;">Order Approved ✓</h1>
+                    </div>
+                    <div style="background:#111114;padding:30px;border:1px solid rgba(255,255,255,.07);border-top:none;border-radius:0 0 8px 8px;">
+                        <p style="color:#f0ede6;font-size:15px;">Dear <strong>${esc(order.name)}</strong>,</p>
+                        <p style="color:#f0ede6;font-size:15px;">We are pleased to inform you that your order has been <strong style="color:#2ecc71;">approved</strong>!</p>
+                        <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:16px;margin:20px 0;">
+                            <p style="color:#6b6b78;margin:4px 0;font-size:13px;">Plan: <span style="color:#f0ede6;font-weight:600;">${esc(order.plan || '—')}</span></p>
+                            <p style="color:#6b6b78;margin:4px 0;font-size:13px;">Price: <span style="color:#d4af37;font-weight:600;">${esc(order.price || '—')}</span></p>
+                            <p style="color:#6b6b78;margin:4px 0;font-size:13px;">Payment: <span style="color:#f0ede6;">${esc(order.paymentMethod || '—')}</span></p>
+                        </div>
+                        <p style="color:#f0ede6;font-size:15px;">Thank you for choosing MW Intelligence. We will begin working on your project shortly.</p>
+                        <p style="color:#6b6b78;font-size:13px;margin-top:24px;">Best regards,<br><strong style="color:#f0ede6;">Mohamed Abdelhamid</strong><br>MW Intelligence</p>
+                    </div>
+                </div>`;
+        } else {
+            return `
+                <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;">
+                    <div style="background:#e74c3c;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+                        <h1 style="color:#fff;margin:0;font-size:22px;">Order Rejected</h1>
+                    </div>
+                    <div style="background:#111114;padding:30px;border:1px solid rgba(255,255,255,.07);border-top:none;border-radius:0 0 8px 8px;">
+                        <p style="color:#f0ede6;font-size:15px;">Dear <strong>${esc(order.name)}</strong>,</p>
+                        <p style="color:#f0ede6;font-size:15px;">We regret to inform you that your order has been <strong style="color:#e74c3c;">rejected</strong> and a refund has been initiated.</p>
+                        <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:16px;margin:20px 0;">
+                            <p style="color:#6b6b78;margin:4px 0;font-size:13px;">Plan: <span style="color:#f0ede6;font-weight:600;">${esc(order.plan || '—')}</span></p>
+                            <p style="color:#6b6b78;margin:4px 0;font-size:13px;">Price: <span style="color:#e74c3c;font-weight:600;">${esc(order.price || '—')}</span></p>
+                            <p style="color:#6b6b78;margin:4px 0;font-size:13px;">Payment: <span style="color:#f0ede6;">${esc(order.paymentMethod || '—')}</span></p>
+                        </div>
+                        <p style="color:#f0ede6;font-size:15px;">If you have any questions, please don't hesitate to contact us.</p>
+                        <p style="color:#6b6b78;font-size:13px;margin-top:24px;">Best regards,<br><strong style="color:#f0ede6;">Mohamed Abdelhamid</strong><br>MW Intelligence</p>
+                    </div>
+                </div>`;
+        }
+    }
+
+    async function sendEmail(order, action) {
+        const htmlBody = buildEmailBody(order, action);
+        const plainText = htmlBody.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+
+        try {
+            const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+                method: 'POST',
+                headers: {
+                    'api-key': BREVO_API_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sender: BREVO_SENDER,
+                    to: [{ email: order.email, name: order.name }],
+                    subject: action === 'approved' ? 'Your Order Has Been Approved! — MW Intelligence' : 'Your Order Has Been Rejected — MW Intelligence',
+                    htmlContent: htmlBody,
+                    textContent: plainText
+                })
+            });
+            if (resp.ok) {
+                toast(`Email sent to ${order.email}.`, 'success');
+                showEmailPreview(order.email || '', htmlBody, true);
+            } else {
+                const errText = await resp.text();
+                console.warn('Brevo API error:', resp.status, errText);
+                showEmailPreview(order.email || '', htmlBody, false);
+            }
+        } catch (err) {
+            console.warn('Brevo send failed, showing preview:', err);
+            showEmailPreview(order.email || '', htmlBody, false);
+        }
+    }
+
+    function showEmailPreview(email, htmlBody, sent) {
+        const modalBody = document.getElementById('email-modal-body');
+        const modalTitle = document.querySelector('#email-modal .modal-title');
+        const modalSub = document.querySelector('#email-modal .modal-sub');
+        if (modalTitle) modalTitle.textContent = sent ? 'Email Sent Successfully' : 'Email Preview';
+        if (modalSub) modalSub.textContent = sent ? `Email dispatched to ${esc(email)} via Brevo.` : `Preview of email that would be sent to ${esc(email)}.`;
+        if (modalBody) {
+            modalBody.innerHTML = htmlBody;
+            modalBody.style.background = 'transparent';
+            modalBody.style.border = 'none';
+            modalBody.style.padding = '0';
+            modalBody.style.maxHeight = '300px';
+        }
+        document.getElementById('email-modal').classList.add('open');
+    }
+
+    const emailModalClose = document.getElementById('email-modal-close');
+    if (emailModalClose) {
+        emailModalClose.addEventListener('click', () => {
+            document.getElementById('email-modal').classList.remove('open');
+        });
+    }
+
+    // Patch the accept/reject handlers to also send email
+    window._adminAccept = async function(idx) {
+        const orders = getOrders();
+        if (!orders[idx]) return;
+        orders[idx].status      = 'approved';
+        orders[idx].completedAt = new Date().toISOString();
+        saveOrders(orders);
+        toast(`✓ Order from ${orders[idx].name} accepted.`, 'success');
+        loadAllData();
+        await syncOrderUpdate(orders[idx]);
+        // Send email notification
+        sendEmail(orders[idx], 'approved');
+    };
+
+    window._adminReject = async function(idx) {
+        const orders = getOrders();
+        if (!orders[idx]) return;
+        const order = orders[idx];
+
+        if (order.paymentMethod === 'instapay' || order.paymentMethod === 'Vodafone Cash') {
+            // Show refund modal (original behavior)
+            pendingRejectIdx = idx;
+            setText('rm-amount', order.price ? `${order.price}` : '—');
+            setText('rm-name',   order.name || '—');
+
+            const subEl = document.getElementById('rm-sub');
+            const labelEl = document.getElementById('rm-ipa-label');
+            const ipaEl = document.getElementById('rm-ipa');
+            const warnEl = document.getElementById('rm-warn');
+
+            if (order.paymentMethod === 'instapay') {
+                if (subEl) subEl.textContent = "This order was paid via InstaPay. Transfer the amount back before confirming.";
+                if (labelEl) labelEl.textContent = "Customer IPA";
+                if (ipaEl) ipaEl.textContent = order.ipaAddress || order.senderIpa || '—';
+                if (warnEl) warnEl.innerHTML = "<strong>Action required:</strong> Open your InstaPay app and transfer the amount back to the customer's address above before clicking confirm.";
+            } else {
+                if (subEl) subEl.textContent = "This order was paid via Vodafone Cash. Transfer the amount back before confirming.";
+                if (labelEl) labelEl.textContent = "Customer Wallet";
+                if (ipaEl) ipaEl.textContent = order.walletNumber || '—';
+                if (warnEl) warnEl.innerHTML = "<strong>Action required:</strong> Open your mobile wallet app and transfer the amount back to the customer's Vodafone Cash number above before clicking confirm.";
+            }
+
+            document.getElementById('refund-modal').classList.add('open');
+        } else {
+            orders[idx].status      = 'rejected';
+            orders[idx].completedAt = new Date().toISOString();
+            saveOrders(orders);
+            toast(`Order rejected. PayPal/Card refund typically takes 5–14 business days.`, 'error');
+            loadAllData();
+            await syncOrderUpdate(orders[idx]);
+            sendEmail(orders[idx], 'rejected');
+        }
+    };
+
+    if (rmConfirmBtn) {
+        rmConfirmBtn.addEventListener('click', async () => {
+            if (pendingRejectIdx < 0) return;
+            const orders = getOrders();
+            orders[pendingRejectIdx].status      = 'rejected';
+            orders[pendingRejectIdx].completedAt = new Date().toISOString();
+            saveOrders(orders);
+            toast(`Refund confirmed. Order rejected.`, 'error');
+            refundModal.classList.remove('open');
+            const updatedOrder = orders[pendingRejectIdx];
+            pendingRejectIdx = -1;
+            loadAllData();
+            await syncOrderUpdate(updatedOrder);
+            sendEmail(updatedOrder, 'rejected');
+        });
+    }
+    if (rmCancelBtn) {
+        rmCancelBtn.addEventListener('click', () => {
+            refundModal.classList.remove('open');
+            pendingRejectIdx = -1;
+        });
     }
 
     /* ==========================================================================

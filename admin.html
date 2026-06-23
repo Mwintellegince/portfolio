@@ -1010,7 +1010,7 @@
                 <p class="page-sub">Live view of all orders and earnings.</p>
             </div>
 
-            <div class="stats-row">
+            <div class="stats-row" id="stats-row">
                 <div class="stat-card">
                     <div class="s-label">Net Sales</div>
                     <div class="s-val gold" id="stat-sales">0 EGP</div>
@@ -1027,9 +1027,9 @@
                     <div class="s-change">Awaiting review</div>
                 </div>
                 <div class="stat-card">
-                    <div class="s-label">Total Requests</div>
-                    <div class="s-val" id="stat-total">0</div>
-                    <div class="s-change">All time</div>
+                    <div class="s-label">Registered Users</div>
+                    <div class="s-val gold" id="stat-users">0</div>
+                    <div class="s-change">Total accounts</div>
                 </div>
             </div>
 
@@ -1240,10 +1240,11 @@
                             <th>Role</th>
                             <th>Registered Date</th>
                             <th>Orders Placed</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="users-tbody">
-                        <tr class="empty-row"><td colspan="4">No users registered yet.</td></tr>
+                        <tr class="empty-row"><td colspan="5">No users registered yet.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1259,12 +1260,44 @@
                             <th>Major / Role</th>
                             <th>Joined Date</th>
                             <th>2FA Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="workers-tbody">
-                        <tr class="empty-row"><td colspan="4">No workers registered yet.</td></tr>
+                        <tr class="empty-row"><td colspan="5">No workers registered yet.</td></tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Add New User / Worker Form -->
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 30px;">
+                <div class="section-card" style="padding: 24px;">
+                    <div class="section-head" style="margin-bottom: 20px;">
+                        <h2>Add New User</h2>
+                    </div>
+                    <form id="add-user-form" style="display:flex;flex-direction:column;gap:14px;">
+                        <input type="text" id="add-user-name" placeholder="Full Name" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <input type="email" id="add-user-email" placeholder="Email Address" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <input type="text" id="add-user-password" placeholder="Temporary Password" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <select id="add-user-role" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                            <option value="client">Client</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                        <button type="submit" class="modal-btn primary" style="cursor:none;">Create User</button>
+                    </form>
+                </div>
+                <div class="section-card" style="padding: 24px;">
+                    <div class="section-head" style="margin-bottom: 20px;">
+                        <h2>Add New Worker</h2>
+                    </div>
+                    <form id="add-worker-form" style="display:flex;flex-direction:column;gap:14px;">
+                        <input type="text" id="add-worker-name" placeholder="Full Name" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <input type="email" id="add-worker-email" placeholder="Email Address" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <input type="text" id="add-worker-major" placeholder="Major / Role" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <input type="text" id="add-worker-password" placeholder="Temporary Password" required style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                        <button type="submit" class="modal-btn primary" style="cursor:none;">Create Worker</button>
+                    </form>
+                </div>
             </div>
         </div>
 
@@ -1394,6 +1427,89 @@
             <a id="adm-cv-btn" href="#" download="" class="modal-btn primary" style="text-align: center; text-decoration: none; display: inline-block; cursor: none;">Download CV</a>
             <button class="modal-btn ghost" id="adm-close" style="cursor: none;">Close</button>
 
+        </div>
+    </div>
+</div>
+
+<!-- ========== USER DETAIL/EDIT MODAL ========== -->
+<div class="modal-overlay" id="user-modal">
+    <div class="modal-box" style="max-width: 500px;">
+        <div class="modal-title">User Details</div>
+        <div class="modal-sub" id="um-id">—</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Full Name</label>
+                <input type="text" id="um-name" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Email</label>
+                <input type="email" id="um-email" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Role</label>
+                <select id="um-role" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+                    <option value="client">Client</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Registered</label>
+                <span id="um-created" style="color:var(--muted);font-size:.78rem;">—</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Orders Placed</label>
+                <span id="um-orders" style="color:var(--text);font-size:.82rem;font-weight:600;">0</span>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="modal-btn primary" id="um-save-btn" style="cursor:none;">Save Changes</button>
+            <button class="modal-btn ghost" id="um-close-btn" style="cursor:none;">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== WORKER DETAIL/EDIT MODAL ========== -->
+<div class="modal-overlay" id="worker-modal">
+    <div class="modal-box" style="max-width: 500px;">
+        <div class="modal-title">Worker Details</div>
+        <div class="modal-sub" id="wm-id">—</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Full Name</label>
+                <input type="text" id="wm-name" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Email</label>
+                <input type="email" id="wm-email" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Major / Role</label>
+                <input type="text" id="wm-major" style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:.82rem;outline:none;">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Joined</label>
+                <span id="wm-joined" style="color:var(--muted);font-size:.78rem;">—</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;">2FA Status</label>
+                <span id="wm-2fa" style="font-size:.82rem;font-weight:600;">—</span>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="modal-btn primary" id="wm-save-btn" style="cursor:none;">Save Changes</button>
+            <button class="modal-btn ghost" id="wm-close-btn" style="cursor:none;">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== EMAIL NOTIFICATION MODAL ========== -->
+<div class="modal-overlay" id="email-modal">
+    <div class="modal-box" style="max-width: 520px;">
+        <div class="modal-title">Email Notification Sent</div>
+        <div class="modal-sub">An automated email has been dispatched to the customer.</div>
+        <div id="email-modal-body" style="margin:16px 0;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:.78rem;line-height:1.6;white-space:pre-wrap;color:var(--text);max-height:240px;overflow-y:auto;"></div>
+        <div class="modal-actions">
+            <button class="modal-btn ghost" id="email-modal-close" style="cursor:none;">Close</button>
         </div>
     </div>
 </div>
