@@ -9,18 +9,34 @@ export default function middleware(request) {
   const allowedIpsString = process.env.ALLOWED_IPS || "";
   const allowedIps = allowedIpsString.split(',').map(ip => ip.trim()).filter(Boolean);
 
-  // Retrieve client IP from Vercel's secure header
-  const clientIp = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0].trim();
-
-  // If no allowed IPs are configured, we pass through (IP whitelisting is disabled).
-  if (allowedIps.length === 0) {
-    return;
-  }
+  // Retrieve client IP from Vercel's secure header or request.ip helper
+  const clientIp = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0].trim() || "";
 
   // Check if client IP is in whitelist (always allow local loopback for local testing)
-  const isAllowed = allowedIps.includes(clientIp) || clientIp === '127.0.0.1' || clientIp === '::1';
+  const isAllowed = allowedIps.length === 0 || allowedIps.includes(clientIp) || clientIp === '127.0.0.1' || clientIp === '::1';
 
-  if (!isAllowed) {
+  // Secure JSON debug endpoint to diagnose IP mismatch issues
+  const url = new URL(request.url);
+  if (url.searchParams.get('debug') === '1') {
+    return new Response(
+      JSON.stringify({
+        status: "IP Diagnostic Mode",
+        detectedClientIp: clientIp,
+        configuredWhitelist: allowedIps,
+        accessGranted: isAllowed,
+        note: "Ensure your active IP matches one of the values in the whitelist. Turn off browser/system VPNs if the IP does not match your home network."
+      }, null, 2),
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json; charset=utf-8'
+        }
+      }
+    );
+  }
+
+  // If IP whitelisting is active and client is not allowed, block them
+  if (allowedIps.length > 0 && !isAllowed) {
     console.warn(`Unauthorized IP blocked from Admin Panel: ${clientIp}`);
 
     // Return a generic 404 response simulating "Not Found" to camouflage the admin panel
