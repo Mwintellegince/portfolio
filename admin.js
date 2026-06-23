@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Firebase Firestore initialized on admin side.");
             
             setupFirebaseListeners();
+            loadAllData();
             return true;
         } catch (e) {
             console.error("Failed to initialize Firebase on admin:", e);
@@ -733,35 +734,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        const deleteBtn = document.getElementById('dm-delete-btn');
-        if (deleteBtn) {
-            if (sessionStorage.getItem('ownerOk') === '1') {
-                deleteBtn.style.display = 'inline-block';
-                deleteBtn.onclick = async () => {
-                    if (confirm('Are you sure you want to delete this order?')) {
-                        const allOrders = getOrders();
-                        const orderToDelete = allOrders[idx];
-                        if (orderToDelete) {
-                            allOrders.splice(idx, 1);
-                            saveOrders(allOrders);
-                            document.getElementById('detail-modal').classList.remove('open');
-                            toast('Order deleted successfully.', 'success');
-                            loadAllData();
-                            if (isFirebaseActive && db) {
-                                try {
-                                    await db.collection('orders').doc(orderToDelete.id).delete();
-                                } catch (err) {
-                                    console.error("Error deleting order from firestore:", err);
-                                }
-                            }
-                        }
-                    }
-                };
-            } else {
-                deleteBtn.style.display = 'none';
-            }
-        }
-
         document.getElementById('detail-modal').classList.add('open');
     };
 
@@ -798,29 +770,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupRefresh('pending-refresh-btn');
 
     /* =====================================================================
-       RESET ALL ORDERS
-    ===================================================================== */
-    const resetModal      = document.getElementById('reset-modal');
-    const resetOpenBtn    = document.getElementById('reset-orders-btn');
-    const confirmResetBtn = document.getElementById('confirm-reset-btn');
-    const cancelResetBtn  = document.getElementById('cancel-reset-btn');
-
-    if (resetOpenBtn) {
-        resetOpenBtn.addEventListener('click', () => resetModal.classList.add('open'));
-    }
-    if (cancelResetBtn) {
-        cancelResetBtn.addEventListener('click', () => resetModal.classList.remove('open'));
-    }
-    if (confirmResetBtn) {
-        confirmResetBtn.addEventListener('click', () => {
-            localStorage.removeItem('client_orders');
-            resetModal.classList.remove('open');
-            loadAllData();
-            toast('All orders have been reset to zero.', 'info');
-        });
-    }
-
-    /* =====================================================================
        HELPERS
     ===================================================================== */
     function esc(str) {
@@ -849,16 +798,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 await db.collection('workers').doc(id).set(workerData);
             } catch (err) {
                 console.error("Error syncing worker to Firestore:", err);
-            }
-        }
-    }
-
-    async function syncWorkerDelete(id) {
-        if (isFirebaseActive && db) {
-            try {
-                await db.collection('workers').doc(id).delete();
-            } catch (err) {
-                console.error("Error deleting worker from Firestore:", err);
             }
         }
     }
@@ -901,18 +840,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const workers = getWorkers();
         if (!workers.length) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No workers registered yet.</td></tr>';
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="4">No workers registered yet.</td></tr>';
             return;
         }
-
-        const isOwner = sessionStorage.getItem('ownerOk') === '1';
 
         tbody.innerHTML = workers.map((w, idx) => {
             const dateStr = w.joinedAt ? new Date(w.joinedAt).toLocaleDateString('en-EG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
             const faStatus = w.twoFactorSetup ? '<span class="badge approved">2FA Enabled</span>' : '<span class="badge pending">2FA Pending</span>';
-            const actionHtml = isOwner ? 
-                `<button class="btn-reject" onclick="window._adminRemoveWorker('${w.id}')" style="cursor:none; font-size:.7rem; padding:4px 8px;">Remove</button>` : 
-                `<span style="color:var(--muted); font-size:.75rem;">Locked</span>`;
 
             return `
                 <tr>
@@ -923,25 +857,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td><strong style="color:var(--text);">${esc(w.major)}</strong></td>
                     <td>${dateStr}</td>
                     <td>${faStatus}</td>
-                    <td>${actionHtml}</td>
                 </tr>
             `;
         }).join('');
-    }
-
-    window._adminRemoveWorker = async function(id) {
-        if (sessionStorage.getItem('ownerOk') !== '1') {
-            toast('Owner permissions required.', 'error');
-            return;
-        }
-        if (confirm('Are you sure you want to remove this worker?')) {
-            let workers = getWorkers();
-            workers = workers.filter(w => w.id !== id);
-            saveWorkers(workers);
-            toast('Worker removed successfully.', 'success');
-            loadAllData();
-            await syncWorkerDelete(id);
-        }
     };
 
     /* =====================================================================
@@ -1086,35 +1004,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 cvBtn.style.pointerEvents = 'auto';
                 cvBtn.style.opacity = '1';
-            }
-        }
-
-        const deleteAppBtn = document.getElementById('adm-delete-btn');
-        if (deleteAppBtn) {
-            if (sessionStorage.getItem('ownerOk') === '1') {
-                deleteAppBtn.style.display = 'inline-block';
-                deleteAppBtn.onclick = async () => {
-                    if (confirm('Are you sure you want to delete this application?')) {
-                        const allApps = getApplications();
-                        const appToDelete = allApps[idx];
-                        if (appToDelete) {
-                            allApps.splice(idx, 1);
-                            saveApplications(allApps);
-                            document.getElementById('app-detail-modal').classList.remove('open');
-                            toast('Application deleted successfully.', 'success');
-                            loadAllData();
-                            if (isFirebaseActive && db) {
-                                try {
-                                    await db.collection('applications').doc(appToDelete.id).delete();
-                                } catch (err) {
-                                    console.error("Error deleting application from firestore:", err);
-                                }
-                            }
-                        }
-                    }
-                };
-            } else {
-                deleteAppBtn.style.display = 'none';
             }
         }
 
@@ -1276,16 +1165,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function syncAnnouncementDelete(id) {
-        if (isFirebaseActive && db) {
-            try {
-                await db.collection('announcements').doc(id).delete();
-            } catch (err) {
-                console.error("Error deleting announcement from Firestore:", err);
-            }
-        }
-    }
-
     function renderAnnouncements() {
         const listContainer = document.getElementById('announcements-list');
         if (!listContainer) return;
@@ -1320,9 +1199,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="btn-view" style="font-size:.68rem; padding:4px 8px; cursor:none;" onclick="window._adminToggleAnnouncementActive('${a.id}')">
                             ${a.isActive ? 'Deactivate' : 'Activate'}
                         </button>
-                        <button class="btn-reject" style="font-size:.68rem; padding:4px 8px; cursor:none;" onclick="window._adminDeleteAnnouncement('${a.id}')">
-                            Remove
-                        </button>
+
                     </div>
                 </div>
             `;
@@ -1349,15 +1226,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toast(ann.isActive ? 'Announcement banner activated.' : 'Announcement banner deactivated.', 'success');
         loadAllData();
         await syncAnnouncementUpdate(ann);
-    };
-
-    window._adminDeleteAnnouncement = async function(id) {
-        let anns = getAnnouncements();
-        anns = anns.filter(a => a.id !== id);
-        saveAnnouncements(anns);
-        toast('Announcement removed.', 'success');
-        loadAllData();
-        await syncAnnouncementDelete(id);
     };
 
     const annForm = document.getElementById('announcement-form');

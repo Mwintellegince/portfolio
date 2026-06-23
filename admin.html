@@ -385,8 +385,8 @@
         }
 
         /* ── TABLE ── */
-        .admin-table { width: 100%; border-collapse: collapse; }
-        .admin-table th {
+        .admin-table, .data-table { width: 100%; border-collapse: collapse; }
+        .admin-table th, .data-table th {
             padding: 10px 20px;
             text-align: left;
             font-size: .62rem; font-weight: 700;
@@ -394,17 +394,21 @@
             color: var(--muted);
             border-bottom: 1px solid var(--border);
         }
-        .admin-table td {
+        .admin-table td, .data-table td {
             padding: 14px 20px;
             font-size: .82rem; color: var(--text);
             border-bottom: 1px solid rgba(255,255,255,.04);
             vertical-align: middle;
         }
-        .admin-table tr:last-child td { border-bottom: none; }
-        .admin-table tr { transition: background .15s; }
-        .admin-table tr:hover td { background: rgba(255,255,255,.02); }
+        .admin-table tr:last-child td,
+        .data-table tr:last-child td { border-bottom: none; }
+        .admin-table tr,
+        .data-table tr { transition: background .15s; }
+        .admin-table tr:hover td,
+        .data-table tr:hover td { background: rgba(255,255,255,.02); }
 
-        .empty-row td {
+        .data-table .empty-row td,
+        .admin-table .empty-row td {
             text-align: center; color: var(--muted);
             padding: 40px; font-size: .82rem;
         }
@@ -656,6 +660,30 @@
             }
             .mobile-nav-bar {
                 display: flex;
+            }
+            .admin-table, .data-table {
+                font-size: .72rem;
+            }
+            .admin-table th, .data-table th,
+            .admin-table td, .data-table td {
+                padding: 8px 10px;
+            }
+            .section-card {
+                overflow-x: auto;
+            }
+            .page { padding: 16px; }
+            .brief-text { max-width: 120px; }
+            .action-group { flex-direction: column; gap: 4px; }
+            .action-group .btn-accept,
+            .action-group .btn-reject,
+            .action-group .btn-view {
+                font-size: .6rem; padding: 4px 8px; width: 100%; text-align: center;
+            }
+            .stat-card { padding: 14px 16px; }
+            .stat-card .s-val { font-size: 1.2rem; }
+            .page-title { font-size: 1.3rem; }
+            #page-announcements > div {
+                grid-template-columns: 1fr !important;
             }
         }
 
@@ -1012,10 +1040,7 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23,4 23,10 17,10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                         Refresh
                     </button>
-                    <button class="refresh-btn" id="reset-orders-btn" style="margin-left:8px;color:var(--red);border-color:rgba(231,76,60,.25);">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6M14,11v6"/></svg>
-                        Reset All Orders
-                    </button>
+
                 </div>
                 <div class="activity-list" id="activity-list">
                     <div style="padding:40px;text-align:center;color:var(--muted);font-size:.82rem;">No activity yet.</div>
@@ -1234,11 +1259,10 @@
                             <th>Major / Role</th>
                             <th>Joined Date</th>
                             <th>2FA Status</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="workers-tbody">
-                        <tr class="empty-row"><td colspan="5">No workers registered yet.</td></tr>
+                        <tr class="empty-row"><td colspan="4">No workers registered yet.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1322,7 +1346,7 @@
 
         <div class="modal-actions">
             <button class="modal-btn ghost" id="dm-close">Close</button>
-            <button class="modal-btn primary" id="dm-delete-btn" style="background:var(--red); border-color:var(--red); display:none; cursor:none;">Delete Order</button>
+
         </div>
     </div>
 </div>
@@ -1369,22 +1393,7 @@
         <div class="modal-actions" style="margin-top: 18px;">
             <a id="adm-cv-btn" href="#" download="" class="modal-btn primary" style="text-align: center; text-decoration: none; display: inline-block; cursor: none;">Download CV</a>
             <button class="modal-btn ghost" id="adm-close" style="cursor: none;">Close</button>
-            <button class="modal-btn primary" id="adm-delete-btn" style="background:var(--red); border-color:var(--red); display:none; cursor:none;">Delete Application</button>
-        </div>
-    </div>
-</div>
 
-<!-- ========== RESET CONFIRM MODAL ========== -->
-<div class="modal-overlay" id="reset-modal">
-    <div class="modal-box">
-        <div class="modal-title" style="color:var(--red);">Reset All Orders?</div>
-        <div class="modal-sub">This will permanently delete all stored orders from this browser. This cannot be undone.</div>
-        <div class="modal-warn">
-            <strong>Warning:</strong> All pending, approved, and rejected orders will be removed. Net Sales, Refunds, and all stats will reset to zero.
-        </div>
-        <div class="modal-actions">
-            <button class="modal-btn danger" id="confirm-reset-btn">Yes, Reset Everything</button>
-            <button class="modal-btn ghost" id="cancel-reset-btn">Cancel</button>
         </div>
     </div>
 </div>
