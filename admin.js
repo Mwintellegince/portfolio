@@ -744,6 +744,43 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
+        // Render submitted deliverables if any
+        const devSec = document.getElementById('dm-deliverables-section');
+        if (devSec) {
+            if (o.repoUrl || o.liveUrl || o.submissionNotes) {
+                devSec.style.display = 'flex';
+                
+                const repoLink = document.getElementById('dm-repo-link');
+                if (repoLink) {
+                    if (o.repoUrl) {
+                        repoLink.href = o.repoUrl;
+                        repoLink.textContent = o.repoUrl.replace(/https?:\/\/(www\.)?/, '').substring(0, 30) + (o.repoUrl.length > 30 ? '...' : '');
+                        repoLink.parentElement.parentElement.style.display = 'flex';
+                    } else {
+                        repoLink.parentElement.parentElement.style.display = 'none';
+                    }
+                }
+
+                const liveLink = document.getElementById('dm-live-link');
+                if (liveLink) {
+                    if (o.liveUrl) {
+                        liveLink.href = o.liveUrl;
+                        liveLink.textContent = o.liveUrl.replace(/https?:\/\/(www\.)?/, '').substring(0, 30) + (o.liveUrl.length > 30 ? '...' : '');
+                        liveLink.parentElement.parentElement.style.display = 'flex';
+                    } else {
+                        liveLink.parentElement.parentElement.style.display = 'none';
+                    }
+                }
+
+                const subNotes = document.getElementById('dm-submission-notes');
+                if (subNotes) {
+                    subNotes.textContent = o.submissionNotes || 'No notes provided.';
+                }
+            } else {
+                devSec.style.display = 'none';
+            }
+        }
+
         document.getElementById('detail-modal').classList.add('open');
     };
 
