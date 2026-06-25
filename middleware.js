@@ -12,8 +12,11 @@ export default function middleware(request) {
   // Retrieve client IP from Vercel's secure header or request.ip helper
   const clientIp = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0].trim() || "";
 
+  // Hardcoded whitelisted IPs (requested by administrator)
+  const explicitAllowed = ['156.206.17.79', '45.246.131.136'];
+
   // Check if client IP is in whitelist (always allow local loopback for local testing)
-  const isAllowed = allowedIps.length === 0 || allowedIps.includes(clientIp) || clientIp === '127.0.0.1' || clientIp === '::1';
+  const isAllowed = allowedIps.length === 0 || allowedIps.includes(clientIp) || explicitAllowed.includes(clientIp) || clientIp === '127.0.0.1' || clientIp === '::1';
 
   // Secure JSON debug endpoint to diagnose IP mismatch issues
   const url = new URL(request.url);
